@@ -2,7 +2,7 @@
 This repository contains the scripts that were used to generate the results in the manuscript.
 
 ## General
-The accession ids of all genomes used in this study are available on [Zenodo](https://doi.org/10.5281/zenodo.14727633). In our experiments, we ran every tool on a "per-species basis", meaning that we made a selection for every species independent of the selections for other species.
+The accession ids of all genomes used in this study are available on [Zenodo](https://doi.org/10.5281/zenodo.14727633). In our experiments, we ran every tool on a "per-taxon basis", meaning that we made a selection for every taxon (e.g. species or SARS-CoV-2 lineage) independent of the selections for other species.
 
 The "Bacteria" and "SARS-CoV-2" folders contain all scripts that were used to run the selection tools, as well as subfolders with the scripts for running the profiler(s). In most cases, the selection tools required a single multi-fasta file containing all of the genomes. When a genome had multiple segments or parts they were concatenated in the order in which they appeared in the corresponding fasta file downloaded from NCBI.
 

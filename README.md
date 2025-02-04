@@ -8,14 +8,6 @@ The "Bacteria" and "SARS-CoV-2" folders contain all scripts that were used to ru
 
 
 ## Hierarchical clustering and centroid selections
-Both the hierarchical clustering (based on MASH distances), and the centroid selections were obtained by running a simple Python script using `scipy`. This script loaded the distance matrix for a species, and afterwards ran the following lines of code for hierarchical clustering:
+Both the hierarchical clustering (based on MASH distances), and the centroid selections were obtained by running a simple Python script. For hierarchical clustering, this script loaded the MASH distance matrix for a species, and afterwards used `scipy`'s clustering functionality for hierarchical clustering. Then, for every cluster, the centroid was selected as its representative.
 
-```python
-from scipy.spatial.distance import squareform
-from scipy.cluster.hierarchy import linkage, fcluster
-
-Z = linkage(squareform(distance_matrix), method=args.linkage)
-clusters = fcluster(Z, t=threshold, criterion="distance")
-```
-
-Then, for every `cluster` in `clusters`, we obtain the centroid as a representative for the corresponding cluster. This is also used for the centroid selection, except in that case we simply provided the full set of genomes rather than every cluster.
+The centroid selection followed a similar selection strategy, but instead of clustering first, immediately returns the centroid of all genomes for a species/lineage.

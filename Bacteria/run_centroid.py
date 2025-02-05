@@ -1,5 +1,5 @@
 import numpy as np
-
+import os
 import argparse
 
 def read_matrix(matrix_path):
@@ -28,7 +28,8 @@ def main():
     distance_matrix, names = read_matrix(args.matrix)
     centroid = np.argmin(np.sum(distance_matrix, axis=1)) #select centroid
     
-    with open(args.output, "w") as f_out: #write output
+    os.makedirs(args.output, exist_ok=True)
+    with open(f"{args.output}/centroid", "w") as f_out: #write output
         f_out.write(names[centroid] + "\n")
     
 if __name__ == "__main__":

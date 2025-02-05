@@ -35,3 +35,9 @@ python ../../Bacteria/run_hierarchical.py --matrix genomes_per_species/0/mash_di
 python ../../Bacteria/run_hierarchical.py --matrix genomes_per_species/0/mash_distances.dist --threshold 0.03 --output selections/0
 python ../../Bacteria/run_hierarchical.py --matrix genomes_per_species/0/mash_distances.dist --threshold 0.05 --output selections/0
 ```
+
+#### Centroid selection
+The centroid selection can be obtained by running `run_centroid.py`, and storing the results in the "selections" folder again.
+```bash
+python ../../Bacteria/run_centroid.py --matrix genomes_per_species/0/mash_distances.dist --output selections/0
+```

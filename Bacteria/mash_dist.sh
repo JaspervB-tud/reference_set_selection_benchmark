@@ -1,4 +1,5 @@
 INPUT_FILE=$1
-THREADS=$2
+OUTPUT_FILE=$2
+THREADS=$3
 
-mash triangle -p $THREADS $INPUT_FILE
+mash triangle -p $THREADS $INPUT_FILE > $OUTPUT_FILE

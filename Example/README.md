@@ -21,6 +21,8 @@ We first generate MASH sketches, which are used to estimate the (dis)similarity 
 Assuming that the user is in this folder, we run the following two lines for every species (we only show the lines for running it for species "0"):
 
 ```bash
-    ../../Bacteria/mash_sketch.sh genomes_per_species/0 genomes_per_species/0
+    ../../Bacteria/mash_sketch.sh genomes_per_species/0 genomes_per_species/0 2
     ../../Bacteria/mash_dist.sh genomes_per_species/0/mash_sketches.msh genomes_per_species/0/mash_distances.dist 2
 ```
+
+After doing so, we obtain a MASH sketch (for parameters see the `mash_sketch.sh` file) for every genome, as well as a lower triangular distance matrix between all genomes of a species.

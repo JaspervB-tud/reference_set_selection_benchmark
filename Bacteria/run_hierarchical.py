@@ -1,7 +1,7 @@
 import numpy as np
+import os
 from scipy.spatial.distance import squareform
 from scipy.cluster.hierarchy import linkage, fcluster
-
 import argparse
 
 def read_matrix(matrix_path):
@@ -30,9 +30,9 @@ def main():
     
     distance_matrix, names = read_matrix(args.matrix)
     nonzeros = np.array([distance_matrix[i,j] for i in range(distance_matrix.shape[0]) for j in range(i) if distance_matrix[i,j] != 0])
-    for linkeage in ["single", "complete"]:
+    for linkage_type in ["single", "complete"]:
         if len(nonzeros) > 0: #if there are nonzeros, perform clustering, otherwise output first genome
-            Z = linkage(squareform(distance_matrix), method="")    
+            Z = linkage(squareform(distance_matrix), method=linkage_type)    
             clusters = fcluster(Z, t=args.threshold, criterion="distance")
             representatives = {}
             for cluster in np.unique(clusters):
@@ -46,9 +46,10 @@ def main():
         else:
             representatives = {0: names[0]}
         
-    with open(args.output, "w") as f_out: #write output
-        for cluster in representatives:
-            f_out.write(representatives[cluster] + "\n")
+        os.makedirs(args.output, exist_ok=True)
+        with open(f"{args.output}/{linkage_type}-linkage_{args.threshold}", "w") as f_out: #write output
+            for cluster in representatives:
+                f_out.write(representatives[cluster] + "\n")
     
 if __name__ == "__main__":
     main()

@@ -41,3 +41,11 @@ The centroid selection can be obtained by running `run_centroid.py`, and storing
 ```bash
 python ../../Bacteria/run_centroid.py --matrix genomes_per_species/0/mash_distances.dist --output selections/0
 ```
+
+#### GGRaSP selection
+GGRaSP expects the output to be formatted as a full matrix, rather than a (lower) triangular matrix. To this end we can use the `convert_matrix.py` script to convert the distance matrix obtained from MASH. Afterwards, we use the `run_ggrasp.R` script to run GGRaSP. NOTE: GGRaSP is prone to fail for various different reasons. In the scenario where GGRaSP failed, we randomly picked a single representative for every taxon where it failed in order to include the corresponding taxon in our database!
+```bash
+python ../../Bacteria/convert_matrix.py --matrix genomes_per_species/0/mash_distances.dist --output genomes_per_species/0
+Rscript ../../Bacteria/run_ggrasp.R 0
+rm genomes_per_species/0/converted_matrix.mat
+```

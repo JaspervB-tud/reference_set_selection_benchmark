@@ -17,3 +17,10 @@ In what follows we will provide the steps taken to generate the results in our m
 ## Genome selection
 ### MASH-based selection
 We first generate MASH sketches, which are used to estimate the (dis)similarity between genomes. For the example provided here, all genomes are decompressed and stored in the "genomes_per_species" folder, where every subfolder is labeled according to the (fake) taxid of the species and contains the genomes of the species.
+
+Assuming that the user is in this folder, we run the following two lines for every species (we only show the lines for running it for species "0"):
+
+```bash
+    ../../Bacteria/mash_sketch.sh genomes_per_species/0 genomes_per_species/0
+    ../../Bacteria/mash_dist.sh genomes_per_species/0/mash_sketches.msh genomes_per_species/0/mash_distances.dist 2
+```

@@ -1,4 +1,0 @@
-INPUT_FILE=$1
-THREADS=$2
-
-mash triangle -p $THREADS $INPUT_FILE

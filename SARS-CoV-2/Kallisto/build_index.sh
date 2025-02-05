@@ -1,4 +1,0 @@
-INPUT_GENOMES=$1
-OUTPUT_LOC=$2
-
-kallisto index -i $OUTPUT_LOC/output.idx $INPUT_GENOMES

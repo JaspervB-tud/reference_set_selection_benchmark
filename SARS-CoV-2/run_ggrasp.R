@@ -1,5 +1,0 @@
-library(ggrasp)
-set.seed(1234)
-gg.1 <- ggrasp.load(file=distance_matrix, file.format="matrix", tree.method="single")
-gg.2 <- ggrasp.cluster(gg.1)
-writeLines(gg.2@medoids, "output_file")

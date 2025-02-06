@@ -79,10 +79,17 @@ python scripts/run_centroid.py --matrix genomes/species_X/mash_distances.dist --
 After running, the selection is found in `selections/centroid/species_X/centroid`.
 
 ### Hierarchical clustering (dRep-based approach)
+#### Bacteria
 To obtain the hierarchical clustering selection for the bacterial genomes we used the `run_hierarchical.py` script with thresholds set to 0.01, 0.03, 0.05 which correspond to similarities of 99%, 97% and 95% respectively:
 ```bash
 python scripts/run_hierarchical.py --matrix genomes/species_X/mash_distances.dist --threshold 0.01 --output selections/hierarchical/0.99/species_X
 python scripts/run_hierarchical.py --matrix genomes/species_X/mash_distances.dist --threshold 0.03 --output selections/hierarchical/0.97/species_X
 python scripts/run_hierarchical.py --matrix genomes/species_X/mash_distances.dist --threshold 0.05 --output selections/hierarchical/0.95/species_X
 ```
-After running, this produces 2 selections for every threshold: one with single-linkage clustering, and one with complete-linkage clustering which can be found in `selections/hierarchical/(1 - THRESHOLD)/species_X/single-linkage_THRESHOLD` and `selections/hierarchical/THRESHOLD/species_X/complete-linkage_THRESHOLD` respectively.
+After running, this produces 2 selections for every threshold: one with single-linkage clustering, and one with complete-linkage clustering which can be found in `selections/hierarchical/THRESHOLD/species_X/single-linkage_(1-THRESHOLD)` and `selections/hierarchical/THRESHOLD/species_X/complete-linkage_(1-THRESHOLD)` respectively.
+#### SARS-CoV-2
+Due to the high similarity between SARS-CoV-2 genomes, instead of using fixed thresholds we instead calculate percentile-based distance thresholds for 1, 5, 10, 25, 50, 90 and 99 percentile distances using the `run_hierarchical_sc2.py` script:
+```bash
+python scripts/run_hierarchical_sc2.py --matrix genomes/lineage_X/mash_distances.dist --output selections/hierarchical/lineage_X
+```
+The resulting selection can then be found in `selections/hierarchical/lineage_X/single-linkage_PERCENTILE` and `selections/hierarchical/lineage_X/complete-linkage_PERCENTILE` for every percentile.

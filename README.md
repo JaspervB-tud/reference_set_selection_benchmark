@@ -29,9 +29,8 @@ root
 |   │   └── accession_3.fa
 ├── selections
 │   ├── method_1
-|   │   ├── threshold_1
-|   │   |   ├── species_1
-|   │   |   └── species_2
+|   │   ├── species_1
+|   │   └── species_2
 │   ├── method_2
 |   │   ├── threshold_1
 |   │   |   ├── species_1
@@ -39,6 +38,7 @@ root
 |   │   ├── threshold_2
 |   │   |   ├── species_1
 |   │   |   └── species_2
+└── scripts
 ```
 
 ## Genome selection
@@ -71,3 +71,18 @@ python scripts/convert_matrix.py --matrix genomes/species_X/mash_distances.dist 
 ```
 This produces a `converted_matrix.mat` file with the full distance matrix, that can be removed after running GGRaSP.
 
+### Centroid selection
+To obtain the centroid genome for every species, we used the `run_centroid.py` script provided in the scripts folder, storing the resulting selection in the `selections` folder:
+```bash
+python scripts/run_centroid.py --matrix genomes/species_X/mash_distances.dist --output selections/centroid/species_X
+```
+After running, the selection is found in `selections/centroid/species_X/centroid`.
+
+### Hierarchical clustering (dRep-based approach)
+To obtain the hierarchical clustering selection for the bacterial genomes we used the `run_hierarchical.py` script with thresholds set to 0.01, 0.03, 0.05 which correspond to similarities of 99%, 97% and 95% respectively:
+```bash
+python scripts/run_hierarchical.py --matrix genomes/species_X/mash_distances.dist --threshold 0.01 --output selections/hierarchical/0.99/species_X
+python scripts/run_hierarchical.py --matrix genomes/species_X/mash_distances.dist --threshold 0.03 --output selections/hierarchical/0.97/species_X
+python scripts/run_hierarchical.py --matrix genomes/species_X/mash_distances.dist --threshold 0.05 --output selections/hierarchical/0.95/species_X
+```
+After running, this produces 2 selections for every threshold: one with single-linkage clustering, and one with complete-linkage clustering which can be found in `selections/hierarchical/(1 - THRESHOLD)/species_X/single-linkage_THRESHOLD` and `selections/hierarchical/THRESHOLD/species_X/complete-linkage_THRESHOLD` respectively.

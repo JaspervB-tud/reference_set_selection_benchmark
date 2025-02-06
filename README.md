@@ -52,7 +52,7 @@ The first step in our experiments is to select reference genomes, to be used by 
 In addition, for the SARS-CoV-2 experiments we also used VSEARCH (v2.28.1) and VLQ's selection methodology.
 
 ### MASH
-We first generate MASH sketches for all genomes, which are then used to estimate (dis)similarity between them. From hereon we assume that the user is in the `root` directory as shown in the folder structure in the Organization section. Note that we run these commands FOR EVERY SPECIES/LINEAGE, in order to ensure that there is a selection for every species/lineage. If a species/lineage only has a single available assembly/genome, then the selection is omitted, and the single available genome is always used.
+We first generate MASH sketches for all genomes, which are then used to estimate (dis)similarity between them. From hereon we assume that the user is in the `root` directory as shown in the folder structure in the Organization section. Note that we run these commands FOR EVERY SPECIES/LINEAGE, but only show the command for a single species/lineage here. If a species/lineage only has a single available assembly/genome, then the selection is omitted, and the single available genome is always used.
 ```bash
 # In the bacterial setting
 mash sketch -s 1000 -S 123456 -k 21 -o genomes/species_X/mash_sketches.msh genomes/species_X/*.fa
@@ -62,3 +62,12 @@ mash triangle genomes/species_X/mash_sketches.msh > genomes/species_X/mash_dista
 mash sketch -s 5000 -S 123456 -k 31 -o genomes/lineage_X/mash_sketches.msh genomes/lineage_X/*.fa
 mash triangle genomes/lineage_X/mash_sketches.msh > genomes/lineage_X/mash_distances.dist
 ```
+This results in a MASH sketch for every genome (located in the `mash_sketches.msh` files), as well as a lower triangular distance matrix between all genomes of a species (`mash_distances.dist`).
+
+#### Distance matrix conversion
+As GGRaSP requires the input to consist of a full matrix, rather than the lower triangular matrix outputted by `mash triangle`, we use the `convert_matrix.py` Python script for converting the distances matrices.
+```bash
+python scripts/convert_matrix.py --matrix genomes/species_X/mash_distances.dist --output genomes/species_X
+```
+This produces a `converted_matrix.mat` file with the full distance matrix, that can be removed after running GGRaSP.
+

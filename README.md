@@ -112,7 +112,7 @@ Running this results in a fasta file called `all_genomes.fasta`. Note that the s
 #### MeShClust selection
 We run MeShClust directly on the generated `all_genomes.fasta` files to obtain selections. For the bacterial experiments, we ran MeShClust with thresholds of 95%, 97% and 99%, whereas for the SARS-CoV-2 experiments we ran MeShClust with thresholds of 95% and 99% (since 99% is the maximum allowed threshold):
 ```bash
-meshclust -d genomes/species_X/all_genomes.fasta -o selections/meshclust/THRESHOLD/species_X/meshclust_THRESHOLD #for a threshold of 99% substitute THRESHOLD with 0.99 etc.
+meshclust -d genomes/species_X/all_genomes.fasta -o selections/meshclust/THRESHOLD/species_X/meshclust_THRESHOLD -t 0.99 #for a threshold of 99% substitute THRESHOLD with 0.99 etc.
 ```
 
 #### Gclust selection
@@ -120,7 +120,7 @@ Similar to MeShClust, Gclust requires the `all_genomes.fasta` file to perform se
 ```bash
 perl sortgenome.pl --genomes-file genomes/species_X/all_genomes.fasta --sortedgenomes-file genomes/species_X/all_genomes_sorted.fasta
 ```
-Running as such will generate the sorted `all_genomes_sorted.fasta` file and stores it in the same directory as the individual genome files for the species/lineage of interest. Afterwards, we run Gclust with similarity threshold of 95%, 97% and 99% for the bacterial selections, and 95%, 99% and 99.9% for the SARS-CoV-2 selections:
+Running as such will generate the sorted `all_genomes_sorted.fasta` file and stores it in the same directory as the individual genome files for the species/lineage of interest. Afterwards, we run Gclust with similarity threshold of 95%, 97% and 99% for the bacterial selections, and 95%, 99% and 99.9% for the SARS-CoV-2 selections. Additionally, in the SARS-CoV-2 selections we omitted the `-both` flag.
 ```bash
 gclust -minlen 41 -both -chunk 400 -ext 1 -sparse 4 -nuc -loadall -rebuild -memiden THRESHOLD genomes/species_X/all_genomes_sorted.fasta > selections/gclust/THRESHOLD/species_X/gclust_0.THRESHOLD #for a threshold of 99%, substitute THRESHOLD with 99 etc.
 ```
@@ -128,5 +128,7 @@ gclust -minlen 41 -both -chunk 400 -ext 1 -sparse 4 -nuc -loadall -rebuild -memi
 #### VSEARCH selection
 We tried running VSEARCH for the bacterial setting but this turned out to take too long. Therefore, we only ran VSEARCH for the SARS-CoV-2 setting:
 ```bash
-
+vsearch --cluster_fast genomes/species_X/all_genomes.fasta --centroids selections/vsearch/THRESHOLD/species_X/vsearch_THRESHOLD --id THRESHOLD --iddef 0 --qmask none
 ```
+In contrast to all other tools so far, VSEARCH outputs a fasta file containing the full sequences of all the selected genomes, rather than the ids of the selected sequences.
+

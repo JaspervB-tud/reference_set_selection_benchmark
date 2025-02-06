@@ -132,3 +132,15 @@ vsearch --cluster_fast genomes/species_X/all_genomes.fasta --centroids selection
 ```
 In contrast to all other tools so far, VSEARCH outputs a fasta file containing the full sequences of all the selected genomes, rather than the ids of the selected sequences.
 
+### VLQ selection
+For selecting SARS-CoV-2 genomes, we also used the selection methodology provided in the VLQ pipeline, however, we use a slightly adapted version of the `call_variants.sh` script which now operates on a single lineage. The script should be called as follows for every lineage:
+```bash
+bash scripts/run_vlq.sh LINEAGE REF_GENOME genomes/ full_path_to_selections_folder/vlq
+```
+Here, LINEAGE is the name of the lineage (e.g. X in most of our example code so far), REF_GENOME is the reference genome against which variants are called (MN908947.3 for our experiments). Running the script will generate a `LINEAGE_merged.frq` file, `LINEAGE_merged.pi` file and a `LINEAGE_merged.vcf.gz` file for the lineage on which the script is called. 
+
+In order to perform VLQ's selection steps, this should be run on ALL lineages before proceeding, making sure that the `selections/vlq` folder contains the required files for all lineages. Afterwards we call the `select_samples.py` script from VLQ which requires a single fasta file containing all genomes (from every lineage), and a corresponding metadata file. Assuming that these are stored in the `genomes` folder, we run:
+```bash
+python select_samples.py -m genomes/metadata.tsv -f genomes/all_genomes.fasta -o selections/vlq --vcf selections/vlq/*_merged.vcf.gz --freq selections/vlq/*_merged.fq --max_per_lineage 1000
+```
+This generates both a `sequences.fasta` and `metadata.tsv` file, containing the genome sequences and the metadata respectively, for every lineage.

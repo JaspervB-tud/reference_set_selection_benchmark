@@ -78,7 +78,7 @@ python scripts/run_centroid.py --matrix genomes/species_X/mash_distances.dist --
 ```
 After running, the selection is found in `selections/centroid/species_X/centroid`.
 
-### Hierarchical clustering (dRep-based approach)
+### Hierarchical clustering selection (dRep-based approach)
 #### Bacteria
 To obtain the hierarchical clustering selection for the bacterial genomes we used the `run_hierarchical.py` script with thresholds set to 0.01, 0.03, 0.05 which correspond to similarities of 99%, 97% and 95% respectively:
 ```bash
@@ -92,4 +92,11 @@ Due to the high similarity between SARS-CoV-2 genomes, instead of using fixed th
 ```bash
 python scripts/run_hierarchical_sc2.py --matrix genomes/lineage_X/mash_distances.dist --output selections/hierarchical/lineage_X
 ```
-The resulting selection can then be found in `selections/hierarchical/lineage_X/single-linkage_PERCENTILE` and `selections/hierarchical/lineage_X/complete-linkage_PERCENTILE` for every percentile.
+The resulting selections can then be found in `selections/hierarchical/lineage_X/single-linkage_PERCENTILE` and `selections/hierarchical/lineage_X/complete-linkage_PERCENTILE` for every percentile.
+
+### GGRaSP selection
+As stated before, GGRaSP requires the full distance matrices rather than (lower) triangular matrices, so make sure to run the `convert_matrix.py` script before running the following:
+```bash
+Rscript scripts/run_ggrasp.R genomes/species_X/converted_matrix.mat selections/ggrasp/species_X
+```
+The resulting selection can then be found in `selections/ggrasp/species_X/ggrasp`.

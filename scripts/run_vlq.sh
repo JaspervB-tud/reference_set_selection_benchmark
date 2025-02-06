@@ -13,7 +13,6 @@ LINEAGE=$1
 REF_GENOME=$2
 BASE_DIR=$3
 OUTPUT_DIR=$4
-PATH_TO_VLQ=$5
 
 # Make directory for storing reference genomes
 mkdir -p ${OUTPUT_DIR}
@@ -38,11 +37,3 @@ vcftools --gzvcf "${OUTPUT_DIR}/${LINEAGE}_merged.vcf.gz" --out "${OUTPUT_DIR}/$
 vcftools --gzvcf "${OUTPUT_DIR}/${LINEAGE}_merged.vcf.gz" --out "${OUTPUT_DIR}/${LINEAGE}_merged" --freq;
 echo "Done processing lineage ${LINEAGE}, removing .paf, .paftools.log, .vcf.gz and .vcf.gz.csi files"
 find "${BASE_DIR}/${LINEAGE}" -type f \( -name "*.paf" -o -name "*.paftools.log" -o -name "*.vcf.gz" -o -name "*.vcf.gz.csi" \) -delete
-# Run selection script
-python3 "${PATH_TO_VLQ}/pipeline/select_samples.py" \
-    -m "${BASE_DIR}/${LINEAGE}/metadata.tsv" \
-    -f "${BASE_DIR}/${LINEAGE}/all_genomes.fasta" \
-    -o ${OUTPUT_DIR} \
-    --vcf ${OUTPUT_DIR}/*_merged.vcf.gz \
-    --freq ${OUTPUT_DIR}/*_merged.frq \
-    --max_per_lineage 1000

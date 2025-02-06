@@ -99,4 +99,4 @@ As stated before, GGRaSP requires the full distance matrices rather than (lower)
 ```bash
 Rscript scripts/run_ggrasp.R genomes/species_X/converted_matrix.mat selections/ggrasp/species_X
 ```
-The resulting selection can then be found in `selections/ggrasp/species_X/ggrasp`.
+The resulting selection can then be found in `selections/ggrasp/species_X/ggrasp`. **IMPORTANT**: in our experiments, GGRaSP failed to select genomes several times, and for various different reasons. In the scenario where GGRaSP (or any other tool for that matter) failed to select, we randomly picked a single representative genome for every species/lineage where it failed.

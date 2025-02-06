@@ -4,4 +4,4 @@ THREADS=$3
 THRESHOLD=$4
 
 # iddef 0 corresponds to CD-HIT similarity scores
-vsearch --cluster_fast $INPUT_GENOMES --centroids $OUTPUT_FILE--id ${THRESHOLD} --iddef 0 --qmask none --threads $THREADS
+vsearch --cluster_fast $INPUT_GENOMES --centroids $OUTPUT_FILE --id ${THRESHOLD} --iddef 0 --qmask none --threads $THREADS

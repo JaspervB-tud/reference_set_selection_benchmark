@@ -87,6 +87,7 @@ python scripts/run_hierarchical.py --matrix genomes/species_X/mash_distances.dis
 python scripts/run_hierarchical.py --matrix genomes/species_X/mash_distances.dist --threshold 0.05 --output selections/hierarchical/0.95/species_X
 ```
 After running, this produces 2 selections for every threshold: one with single-linkage clustering, and one with complete-linkage clustering which can be found in `selections/hierarchical/THRESHOLD/species_X/single-linkage_(1-THRESHOLD)` and `selections/hierarchical/THRESHOLD/species_X/complete-linkage_(1-THRESHOLD)` respectively.
+
 #### SARS-CoV-2
 Due to the high similarity between SARS-CoV-2 genomes, instead of using fixed thresholds we instead calculate percentile-based distance thresholds for 1, 5, 10, 25, 50, 90 and 99 percentile distances using the `run_hierarchical_sc2.py` script:
 ```bash
@@ -100,3 +101,32 @@ As stated before, GGRaSP requires the full distance matrices rather than (lower)
 Rscript scripts/run_ggrasp.R genomes/species_X/converted_matrix.mat selections/ggrasp/species_X
 ```
 The resulting selection can then be found in `selections/ggrasp/species_X/ggrasp`. **IMPORTANT**: in our experiments, GGRaSP failed to select genomes several times, and for various different reasons. In the scenario where GGRaSP (or any other tool for that matter) failed to select, we randomly picked a single representative genome for every species/lineage where it failed.
+
+### MeShClust, Gclust and VSEARCH selection
+MeShClust, Gclust and VSEARCH require a single multi-fasta input file containing all genomes from which to select. As several of the genomes in our bacterial experiments had more than one entry in the corresponding fasta file (e.g. multiple chromosomes), these were first concatenated to a single entry in the order in which they appear in the fasta file. Then all (concatenated) genomes were added to a single fasta file using the `concatenate_genomes.py` script:
+```bash
+python scripts/concatenate_genomes.py --genomes genomes/species_X --output genomes/species_X
+```
+Running this results in a fasta file called `all_genomes.fasta`. Note that the script assumes that all non-concatenated genomes are stored in the same input directory ending in the `*.fa` extension.
+
+#### MeShClust selection
+We run MeShClust directly on the generated `all_genomes.fasta` files to obtain selections. For the bacterial experiments, we ran MeShClust with thresholds of 95%, 97% and 99%, whereas for the SARS-CoV-2 experiments we ran MeShClust with thresholds of 95% and 99% (since 99% is the maximum allowed threshold):
+```bash
+meshclust -d genomes/species_X/all_genomes.fasta -o selections/meshclust/THRESHOLD/species_X/meshclust_THRESHOLD #for a threshold of 99% substitute THRESHOLD with 0.99 etc.
+```
+
+#### Gclust selection
+Similar to MeShClust, Gclust requires the `all_genomes.fasta` file to perform selection, however, Gclust also requires the genomes in the file to be sorted by length (longest to shortest). They have provided a perl script for this which can be run as follows:
+```bash
+perl sortgenome.pl --genomes-file genomes/species_X/all_genomes.fasta --sortedgenomes-file genomes/species_X/all_genomes_sorted.fasta
+```
+Running as such will generate the sorted `all_genomes_sorted.fasta` file and stores it in the same directory as the individual genome files for the species/lineage of interest. Afterwards, we run Gclust with similarity threshold of 95%, 97% and 99% for the bacterial selections, and 95%, 99% and 99.9% for the SARS-CoV-2 selections:
+```bash
+gclust -minlen 41 -both -chunk 400 -ext 1 -sparse 4 -nuc -loadall -rebuild -memiden THRESHOLD genomes/species_X/all_genomes_sorted.fasta > selections/gclust/THRESHOLD/species_X/gclust_0.THRESHOLD #for a threshold of 99%, substitute THRESHOLD with 99 etc.
+```
+
+#### VSEARCH selection
+We tried running VSEARCH for the bacterial setting but this turned out to take too long. Therefore, we only ran VSEARCH for the SARS-CoV-2 setting:
+```bash
+
+```

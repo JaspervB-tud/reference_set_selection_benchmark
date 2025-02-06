@@ -33,7 +33,7 @@ def main():
         f_out.write("\t".join(names) + "\n")
         for i in range(len(names)):
             cur_numbers = [str(d) for d in distance_matrix[i,:]]
-            cur_line = f"{names[i]}\t{'\t'.join(cur_numbers)}"
+            cur_line = "{}\t{}".format(names[i], "\t".join(cur_numbers))
             f_out.write(cur_line + "\n")
 
 if __name__ == "__main__":

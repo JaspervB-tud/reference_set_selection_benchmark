@@ -1,6 +1,6 @@
 	5
-genomes_per_species/1/1_genome_0.fa
-genomes_per_species/1/1_genome_1.fa	0.00869309
-genomes_per_species/1/1_genome_2.fa	0.0267335	0.0359759
-genomes_per_species/1/1_genome_3.fa	0.0453547	0.054149	0.0733545
-genomes_per_species/1/1_genome_4.fa	0.111073	0.117785	0.142009	0.14383
+Examples/Bacteria/genomes_per_species/1/1_genome_0.fa
+Examples/Bacteria/genomes_per_species/1/1_genome_1.fa	0.0084995
+Examples/Bacteria/genomes_per_species/1/1_genome_2.fa	0.0290489	0.0379382
+Examples/Bacteria/genomes_per_species/1/1_genome_3.fa	0.0511448	0.0583726	0.0834041
+Examples/Bacteria/genomes_per_species/1/1_genome_4.fa	0.104495	0.107658	0.136948	0.159146

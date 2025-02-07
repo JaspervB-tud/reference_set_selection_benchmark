@@ -31,23 +31,25 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--genomes", type=str, required=True)
 	parser.add_argument("--output", type=str, required=True) #this should be the folder to store the output
+	parser.add_argument("--a2t", action="store_true")
 	args = parser.parse_args()
 
 	files_per_species, accessions_per_species = find_genomes_per_species(args.genomes)
 	# Write accession2taxid file to be used by profilers
-	with open(f"{args.output}/nucl_gb.accession2taxid", "w") as f_out:
-		f_out.write("accession\t accession.version\ttaxid\tgi\n")
-		for species in accessions_per_species: #iterate over all species, storing the sequence ids and corresponding taxids
-			for seq_id in accessions_per_species[species]:
-				#Note that in general, sequences in NCBI have an id structured as id.version, so we split it
-				cur_id = seq_id.split(".")
-				if len(cur_id) == 1:
-					cur_id = seq_id
-				else:
-					cur_id = ".".join(cur_id[:-1])
-				f_out.write(f"{cur_id}\t{seq_id}\t{species}\t0\n")
+	if args.a2t:
+		with open(f"{args.output}/nucl_gb.accession2taxid", "w") as f_out:
+			f_out.write("accession\t accession.version\ttaxid\tgi\n")
+			for species in accessions_per_species: #iterate over all species, storing the sequence ids and corresponding taxids
+				for seq_id in accessions_per_species[species]:
+					#Note that in general, sequences in NCBI have an id structured as id.version, so we split it
+					cur_id = seq_id.split(".")
+					if len(cur_id) == 1:
+						cur_id = seq_id
+					else:
+						cur_id = ".".join(cur_id[:-1])
+					f_out.write(f"{cur_id}\t{seq_id}\t{species}\t0\n")
 	# Write file for "all" genomes
-	with open(f"{args.output}/all_selection.tsv", "w") as f_out:
+	with open(f"{args.output}/all.tsv", "w") as f_out:
 		for species in files_per_species:
 			for file in files_per_species[species]:
 				"""

@@ -45,7 +45,6 @@ def main():
 					cur_id = seq_id
 				else:
 					cur_id = ".".join(cur_id[:-1])
-				print(f"{cur_id}\t{seq_id}\t{species}\t0")
 				f_out.write(f"{cur_id}\t{seq_id}\t{species}\t0\n")
 	# Write file for "all" genomes
 	with open(f"{args.output}/all_selection.tsv", "w") as f_out:
@@ -58,3 +57,6 @@ def main():
 				The final column will be a '+' if a selection was made for the species, and a '-' otherwise
 				"""
 				f_out.write(f"{species}\t{file}\t+\n")
+
+if __name__ == "__main__":
+	main()

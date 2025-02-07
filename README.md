@@ -38,6 +38,7 @@ root
 |   │   ├── threshold_2
 |   │   |   ├── species_1
 |   │   |   └── species_2
+├── reference_sets
 └── scripts
 ```
 
@@ -144,3 +145,11 @@ In order to perform VLQ's selection steps, this should be run on ALL lineages be
 python select_samples.py -m genomes/metadata.tsv -f genomes/all_genomes.fasta -o selections/vlq --vcf selections/vlq/*_merged.vcf.gz --freq selections/vlq/*_merged.fq --max_per_lineage 1000
 ```
 This generates both a `sequences.fasta` and `metadata.tsv` file, containing the genome sequences and the metadata respectively, for every lineage.
+
+### Post processing
+#### Bacteria
+After running the tools, all selected genomes should be located in the `selections` folder. At this point we used the `generate_all_selection.py` script to write a summary file with an "all" selection that includes every genome. Furthermore, this will also generate an accession2taxid file in the same format as the accession2taxid files on NCBI Taxonomy. This will be passed to the taxonomic profilers in order to match the ids of individual sequences to the corresponding species taxids. In principle this can be mapped to more specific taxids (e.g. sub-species or strain level if available), but in our experiments we performed experiments at the species level. This can be ran as follows:
+```bash
+python scripts/generate_all_selection.py --genomes genomes --output reference_sets
+```
+This generates two files: a nucl_gb.accession2taxid file which contains sequence id to taxonomy id mappings, and a file called `all_selection.tsv` which contains the filenames of all genome files, for every species. Every line in this file contains a genome, and is structured as: "SPECIES_TAXID $FILENAME (+/-)", delimited by tabs. The final column contains a "+" if the corresponding genome was selected, and a "-" if it was randomly selected in case the selection algorithm failed to perform a selection.

@@ -152,4 +152,13 @@ After running the tools, all selected genomes should be located in the `selectio
 ```bash
 python scripts/generate_all_selection.py --genomes genomes --output reference_sets
 ```
-This generates two files in the `reference_sets` folder: a `nucl_gb.accession2taxid` file which contains sequence id to taxonomy id mappings, and a file called `all_selection.tsv` which contains the filenames of all genome files, for every species. Every line in this file contains a genome, and is structured as: "SPECIES_TAXID $FILENAME (+/-)", delimited by tabs. The final column contains a "+" if the corresponding genome was selected, and a "-" if it was randomly selected in case the selection algorithm failed to perform a selection or if there was only a single available genome.
+This generates two files in the `reference_sets` folder: a `nucl_gb.accession2taxid` file which contains sequence id to taxonomy id mappings, and a file called `all_selection.tsv` which contains the filenames of all genome files, for every species. Every line in this tab delimited file contains a genome, and is structured as:
+```
+SPECIES_TAXID   FILENAME    +/-
+```
+The final column contains a "+" if the corresponding genome was selected, and a "-" if it was randomly selected in case the selection algorithm failed to perform a selection or if there was only a single available genome.
+
+After running the `generate_all_selection.py` script, we now process every selection to produce a similar output which is later used to fetch all the genomes when building the profiling index. For this we run the following:
+```bash
+python scripts/generate_selection_files_bacteria.py 
+```

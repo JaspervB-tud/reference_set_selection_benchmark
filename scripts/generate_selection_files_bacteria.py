@@ -95,7 +95,7 @@ def main():
 					selection_per_species[species].append( (selected, "+") )
 			else: #file does not exist, add 
 				selection_per_species[species] = [(random.choice(files_per_species[species]), "-")]
-	with open(f"{args.output}/{args.filename}", "w") as f_out:
+	with open(f"{args.output}/{args.filename}.tsv", "w") as f_out:
 		for species in selection_per_species:
 			for file, val in selection_per_species[species]:
 				f_out.write(f"{species}\t{file}\t{val}\n")

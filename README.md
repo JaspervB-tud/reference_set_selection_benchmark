@@ -188,6 +188,9 @@ python scripts/generate_selection_files.py --genomes genomes --selection selecti
 ```
 Running this will produce an output file called `METHOD_THRESHOLD.tsv` (with METHOD and THRESHOLD substituted for the chosen method and threshold combination), formatted as the `all.tsv` file, in the `reference_sets` folder. This script should be run for all selection methods and thresholds to produce all the corresponding selection files.
 
+### Comparing reference sets
+To compare the generated sequence sets for every method (both for bacteria and SARS-CoV-2) we used the generated `METHOD_THRESHOLD.tsv` files and calculated for every pair of methods (including the "all" selection) the containment index (in both directions) only considering non-singleton species for which both methods were able to produce a selection (i.e. both methods will have a "+" in the final column of the `.tsv` file).
+
 ## Index building
 Having prepared all the selections and related output files, these can now be used to build the indexes for taxonomic profilers. In our work we used:
 - Kraken2 + Bracken
@@ -265,4 +268,7 @@ python output_abundances.py -m 0.1 -o estimations/sample_1/kallisto/METHOD_THRES
 ```
 
 ## Analyzing results
-Results were analyzed using the `analyze_bacteria.ipynb` and `analyze_sc2.ipynb` Jupyter notebooks available in the `scripts` folder.
+Accuracy metrics were analyzed using the `analyze_bacteria.ipynb` and `analyze_sc2.ipynb` Jupyter notebooks available in the `scripts` folder. In the bacteria case, `analyze_bacteria.ipynb` directly calculates the number of unclassified reads since this is directly available in the output of Bracken. For BWA in combination with DUDes, we instead calculated them from the produced `_num-unaligned` files and for Centrifuge they were obtained from the generated `.sam` files using:
+```bash
+cut -f2 "estimations/sample_1/centrifuge/METHOD_THRESHOLD.sam" | awk '$1 == "unclassified" {count++} END {printf "%d, ", count}'
+```

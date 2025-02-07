@@ -39,6 +39,15 @@ root
 |   │   |   ├── species_1
 |   │   |   └── species_2
 ├── reference_sets
+├── indexes
+│   ├── profiler_1
+│   |   ├── method_1
+│   |   ├── method_2-threshold_1
+|   |   └── method_2-threshold_2
+|   ├── profiler_2
+│   |   ├── method_1
+│   |   ├── method_2-threshold_1
+|   |   └── method_2-threshold_2
 └── scripts
 ```
 
@@ -163,10 +172,44 @@ python scripts/generate_all_selection.py --genomes genomes --output reference_se
 ```
 for the SARS-CoV-2 setting, since in that case the accession2taxid mapping file is not necessary due to the availability of metadata.
 
-
-
 After running the `generate_all_selection.py` script, we now process every selection to produce a similar output which is later used to fetch all the genomes when building the profiling index and when comparing reference sets. For this we run the following:
 ```bash
 python scripts/generate_selection_files.py --genomes genomes --selection selections/METHOD/THRESHOLD --filename METHOD_THRESHOLD --output reference_sets
 ```
 Running this will produce an output file called `METHOD_THRESHOLD.tsv` (with METHOD and THRESHOLD substituted for the chosen method and threshold combination), formatted as the `all.tsv` file, in the `reference_sets` folder. This script should be run for all selection methods and thresholds to produce all the corresponding selection files.
+
+## Index building
+Having prepared all the selections and related output files, these can now be used to build the indexes for taxonomic profilers. In our work we used:
+- Kraken2 + Bracken
+- BWA + DUDes
+- Centrifuge
+in the bacterial setting, and
+- VLQ (kallisto)
+for the SARS-CoV-2 setting. Below we will describe how we built the indexes for every profiler.
+
+### Bacteria
+#### Kraken2 + Bracken
+For Kraken2 in combination with Bracken we have provided a simple bash script called `compile_kraken2-bracken.sh` which gathers all target genomes, and builds a combined Kraken2 and Bracken index with all of the target genomes. The script can be called as follows:
+```bash
+bash scripts/compile_kraken2-bracken.sh METHOD_THRESHOLD reference_sets indexes/kraken2-bracken genomes taxonomy
+```
+This assumes that the taxonomy folder is an effective copy of the NCBI taxdmp folder (version used in manuscript was downloaded on September 24, 2024) such that it contains at least the `names.dmp` and `nodes.dmp` files, and that the created `nucl_gb.accession2taxid` file is in the `reference_sets` folder. After running, the resulting index can be found in the `indexes/kraken2-bracken/METHOD_THRESHOLD` where METHOD and THRESHOLD are placeholders for the method and threshold respectively.
+
+#### Centrifuge
+For Centrifuge we can use the provided bash script called `compile_centrifuge.sh` which effectively mimics the behavior of the `compile_kraken2-bracken.sh` script:
+```bash
+bash scripts/compile_centrifuge.sh METHOD_THRESHOLD reference_sets indexes/centrifuge genomes taxonomy
+```
+
+#### BWA + DUDes
+Finally, for BWA and DUDes we use the script called `compile_bwa-dudes.sh`, which does the same:
+```bash
+bash scripts/compile_bwa-dudes.sh METHOD_THRESHOLD reference_sets indexes/bwa-dudes genomes taxonomy
+```
+
+### SARS-CoV-2
+### Kallisto
+For Kallisto, which forms the backbone of the VLQ pipeline, we have provided a script called `compile_kallisto.sh` which can be ran as:
+```bash
+bash scripts/compile_kallisto.sh METHOD_THRESHOLD reference_sets indexes/kallisto genomes
+```

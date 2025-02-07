@@ -1,4 +1,4 @@
-# Benchmarking the impact of reference genome selection on taxonomic profiling accuracy (this is currently JUST the abstract)
+# Benchmarking the impact of reference genome selection on taxonomic profiling accuracy
 Motivation: Over the past decades, genome databases have expanded exponentially, often incorporating
 highly similar genomes at the same taxonomic level. This redundancy can hinder taxonomic classification,
 leading to difficulties distinguishing between closely related sequences and increasing computational

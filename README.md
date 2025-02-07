@@ -48,6 +48,14 @@ root
 │   |   ├── method_1
 │   |   ├── method_2-threshold_1
 |   |   └── method_2-threshold_2
+├── samples
+│   ├── sample_1
+│   |   ├── sample_1_1.fq
+|   |   └── sample_1_2.fq
+├── estimations
+│   ├── sample_1
+│   |   ├── profiler_1
+|   |   └── profiler_2
 └── scripts
 ```
 
@@ -208,8 +216,51 @@ bash scripts/compile_bwa-dudes.sh METHOD_THRESHOLD reference_sets indexes/bwa-du
 ```
 
 ### SARS-CoV-2
-### Kallisto
+#### Kallisto
 For Kallisto, which forms the backbone of the VLQ pipeline, we have provided a script called `compile_kallisto.sh` which can be ran as:
 ```bash
 bash scripts/compile_kallisto.sh METHOD_THRESHOLD reference_sets indexes/kallisto genomes
 ```
+
+## Profiling
+In our manuscript we used all profilers to estimate a taxonomic profile of simulated paired-end metagenomic samples. In both the Bacteria and SARS-CoV-2 cases these reads were 150bp long, but fragments sizes differ (see manuscript). The simulated reads themselves are available on [Zenodo](https://doi.org/10.5281/zenodo.14727633).
+
+### Bacteria
+#### Kraken2 + Bracken
+Running Kraken2 and Bracken is done in two steps: first running Kraken2, and running Bracken at a desired taxonomic level (species here) afterwards. Assuming the set-up provided here this can be done for every METHOD_THRESHOLD as follows:
+```bash
+kraken2 --db indexes/kraken2-bracken/METHOD_THRESHOLD --report estimations/sample_1/kraken2-bracken/METHOD_THRESHOLD.kreport --paired samples/sample_1/sample_1_1.fq samples/sample_1/sample_1_2.fq > estimations/sample_1/kraken2-bracken/METHOD_THRESHOLD.kraken
+bracken -d indexes/kraken2-bracken/METHOD_THRESHOLD -i estimations/sample_1/kraken2-bracken/METHOD_THRESHOLD.kreport -o estimations/sample_1/kraken2-bracken/METHOD_THRESHOLD.bracken -r 150 -l S
+```
+
+#### Centrifuge
+Centrifuge can be run as follows:
+```bash
+centrifuge -x indexes/centrifuge/METHOD_THRESHOLD -1 samples/sample_1/sample_1_1.fq -2 samples/sample_1/sample_1_2.fq -S estimations/sample_1/centrifuge/METHOD_THRESHOLD.sam --report-file estimations/sample_1/centrifuge/METHOD_THRESHOLD.report
+```
+
+#### BWA + DUDes
+DUDes relies on an alignment file which is used to perform taxonomic classification. We have used BWA MEM for this:
+```bash
+bwa mem -v 1 indexes/bwa-dudes/METHOD_THRESHOLD/bwa_index/bwa samples/sample_1/sample_1_1.fq -2 samples/sample_1/sample_1_2.fq > estimations/sample_1/bwa-dudes/METHOD_THRESHOLD.sam
+```
+
+After running BWA MEM, we filter out unaligned reads, and we store the number of reads that were aligned for later processing. Finally, we run DUDes on the filtered alignment file
+```bash
+# Filter unaligned and calculate stats
+samtools view -F 4 -h estimations/sample_1/bwa-dudes/METHOD_THRESHOLD.sam > estimations/sample_1/bwa-dudes/METHOD_THRESHOLD_filtered.sam
+samtools view -c -f 4 estimations/sample_1/bwa-dudes/METHOD_THRESHOLD.sam estimations/sample_1/bwa-dudes/METHOD_THRESHOLD_num-unaligned.txt
+samtools view -c -F 4 estimations/sample_1/bwa-dudes/METHOD_THRESHOLD.sam estimations/sample_1/bwa-dudes/METHOD_THRESHOLD_num-aligned.txt
+# Run DUDes
+dudes -s estimations/sample_1/bwa-dudes/METHOD_THRESHOLD_filtered.sam -d indexes/bwa-dudes/METHOD_THRESHOLD/dudes_index/dudes.npz -o estimations/sample_1/bwa-dudes/METHOD_THRESHOLD_dudes -l species
+```
+
+### SARS-CoV-2
+In order to obtain SARS-CoV-2 lineage abundance estimates we first run kallisto, followed by the `output_abundances.py` script from VLQ:
+```bash
+kallisto quant -b 0 -i indexes/kallisto/METHOD_THRESHOLD/index.idx -o estimations/sample_1/kallisto/METHOD_THRESHOLD samples/sample_1/sample_1_1.fq samples/sample_1/sample_1_2.fq
+python output_abundances.py -m 0.1 -o estimations/sample_1/kallisto/METHOD_THRESHOLD/predictions.tsv --metadata genomes/metadata.tsv estimations/sample_1/kallisto/METHOD_THRESHOLD/abundance.tsv
+```
+
+## Analyzing results
+Results were analyzed using the `analyze_bacteria.ipynb` and `analyze_sc2.ipynb` Jupyter notebooks available in the `scripts` folder.

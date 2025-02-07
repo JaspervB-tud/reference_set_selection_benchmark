@@ -193,11 +193,11 @@ To compare the generated sequence sets for every method (both for bacteria and S
 
 ## Index building
 Having prepared all the selections and related output files, these can now be used to build the indexes for taxonomic profilers. In our work we used:
-- Kraken2 + Bracken
-- BWA + DUDes
-- Centrifuge
+- Kraken2 (v2.1.3) + Bracken (v1.0.0)
+- BWA (v0.7.18) + DUDes (v0.10.0)
+- Centrifuge (v1.0.4.2)
 in the bacterial setting, and
-- VLQ (kallisto)
+- VLQ (kallisto v0.44.0)
 for the SARS-CoV-2 setting. Below we will describe how we built the indexes for every profiler.
 
 ### Bacteria

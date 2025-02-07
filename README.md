@@ -51,7 +51,9 @@ root
 ├── samples
 │   ├── sample_1
 │   |   ├── sample_1_1.fq
-|   |   └── sample_1_2.fq
+|   |   ├── sample_1_2.fq
+|   |   ├── sample_1_groundtruth_folds.tsv
+|   |   └── sample_1_groundtruth_reads.tsv
 ├── estimations
 │   ├── sample_1
 │   |   ├── profiler_1

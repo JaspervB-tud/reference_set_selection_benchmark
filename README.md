@@ -13,7 +13,7 @@ location, can significantly improve classification accuracy. Finally, we find th
 genome database generally reduces the computational resources required, with minimal loss in classification
 accuracy.
 
-The manuscript itself can be found on [bioRxiv](https://doi.org/10.1101/2025.02.07.63707).
+The manuscript itself can be found on [bioRxiv](https://doi.org/10.1101/2025.02.07.637076).
 
 ## Data
 The accession ids of all genomes used for our manuscript are available on [Zenodo](https://doi.org/10.5281/zenodo.14727633). The bacterial assemblies can be downloaded from NCBI (e.g. through NCBI's entrez), and the SARS-CoV-2 genomes as well as corresponding metadata can be downloaded from GISAID using the provided accession ids.

@@ -274,3 +274,4 @@ Accuracy metrics were analyzed using the `analyze_bacteria.ipynb` and `analyze_s
 ```bash
 cut -f2 "estimations/sample_1/centrifuge/METHOD_THRESHOLD.sam" | awk '$1 == "unclassified" {count++} END {printf "%d, ", count}'
 ```
+In the SARS-CoV-2 case, the percentage of unaligned reads can directly be obtained from the `run_info.json` file that is produced when running kallisto.

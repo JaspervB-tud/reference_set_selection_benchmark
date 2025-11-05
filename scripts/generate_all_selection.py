@@ -56,7 +56,7 @@ def main():
 				Here we generate a file called "all_selection.txt" which will contain all genome names organized per species.
 				This file will have the following structure on every line:
 					$SPECIES \t $FILENAME \t +/-
-				The final column will be a '+' if a selection was made for the species, and a '-' otherwise
+				The final column will be a '+' if a selection was made succesfully for the species, and a '-' otherwise
 				"""
 				f_out.write(f"{species}\t{file}\t+\n")
 

@@ -213,13 +213,20 @@ This script uses the `create_benchmarks_with_seed.py` Python script in `scripts/
 
 With the simulated metagenomic samples, we call kallisto and the `output_abundances.py` Python script from VLQ as follows:
 ```bash
-kallisto quant -b 0 -i root/indexes/${location_type}/${method}_${threshold}.idx -o root/estimations/${location_type}/${sample}/${method}_${threshold} root/samples/${sample}/wwsim_B.1.1.7_ab${abundance}_1.fastq root/samples/${sample}/wwsim_B.1.1.7_ab${abundance}_2.fastq
-python -u output_abundances.py -m 0.1 -o root/estimations/${location_type}/${sample}/${method}_${threshold}_predictions.tsv --metadata root/metadata.tsv root/estimations/${location_type}/${sample}/${method}_${threshold}/abundance.tsv
+kallisto quant -b 0 -i root/indexes/${location_type}/${method}_${threshold}.idx -o root/estimations/${location_type}/${sample}/${method}_${threshold}_${abundance} root/samples/${sample}/wwsim_B.1.1.7_ab${abundance}_1.fastq root/samples/${sample}/wwsim_B.1.1.7_ab${abundance}_2.fastq
+python -u output_abundances.py -m 0.1 -o root/estimations/${location_type}/${sample}/${method}_${threshold}_${abundance}_predictions.tsv --metadata root/metadata.tsv root/estimations/${location_type}/${sample}/${method}_${threshold}_${abundance}/abundance.tsv
 ```
-This will store the direct output of kallisto in `root/estimations/${location_type}/${sample}/${method}_${threshold}/abundance.tsv` and the filtered (at 0.1% abundance) lineage abundance estimations in `root/estimations/${location_type}/${sample}/${method}_${threshold}_predictions.tsv`.
+This will store the direct output of kallisto in `root/estimations/${location_type}/${sample}/${method}_${threshold}_${abundance}/abundance.tsv` and the filtered (at 0.1% abundance) lineage abundance estimations in `root/estimations/${location_type}/${sample}/${method}_${threshold}_${abundance}_predictions.tsv`.
 
 ## Analysis
 To analyse the results obtained we will assume that the workflow was ran as described above. Additionally for most of the resource usage monitoring, we assume that commands were run with `/usr/bin/time/` and that the output is stored somewhere.
 
 ### Reference set comparisons
 In `scripts/virus/analysis_reference_sets.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the reference set comparisons.
+
+### Accuracy comparisons
+In `scripts/virus/analysis_accuracy.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the accuracy calculations.
+
+### Runtime comparisons
+In `scripts/virus/analysis_runtime.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the runtime calculations. \
+**NOTE**: Due to technical problems, the output of `/usr/bin/time` for some of the selection steps were lost. In the notebook these values are hardcoded as the values obtained through SLURM's `seff` commands!

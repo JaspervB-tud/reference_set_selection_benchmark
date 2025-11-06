@@ -103,17 +103,18 @@ def main():
 		cur_folder_path = f"{args.selection}/{species}"
 		selection_per_species[species] = []
 		if len(files_per_species[species]) <= 1: #up to 1 genome for the species -> automatically select
-			selection_per_species[species] = [(files_per_species[species][0], "-")] #we set the "selected" value (+/-) to - which is used when comparing reference sets
+			selection_per_species[species] = [(files_per_species[species][0], "+")] #we set the "selected" value (+/-) to + 
 		else:
 			# Check if output file exists, otherwise randomly select
 			file_path = f"{cur_folder_path}/{args.filename}"
-			print(file_path)
 			if os.path.exists(file_path):
 				# Check which method
 				if "gclust" in args.selection:
 					cur_selection = read_gclust_output(file_path)
 				elif "meshclust" in args.selection:
 					cur_selection = read_meshclust_output(file_path)
+				elif "all" in args.selection:
+					cur_selection = files_per_species[species]
 				else:
 					cur_selection = read_standard_output(file_path)
 				# Store selection

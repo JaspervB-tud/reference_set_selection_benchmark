@@ -17,8 +17,8 @@ root
 ├── simulation_genomes
 │   ├── genus_experiments
 |   │   ├── simulation_species_1
-│   |   |   ├── simulation_accession_1.fa
-│   |   |   └── simulation_accession_2.fa
+│   |   |   ├── simulation_accession_1.fna
+│   |   |   └── simulation_accession_2.fna
 |   │   └── simulation_species_2
 │   ├── family_experiments
 │   └── order_experiments
@@ -159,7 +159,7 @@ gclust -threads 64 -minlen 41 -both -chunk 400 -ext 1 -sparse 4 -nuc -loadall -r
 gclust -threads 64 -minlen 41 -both -chunk 400 -ext 1 -sparse 4 -nuc -loadall -rebuild -memiden 99 root/genomes/${species}/all_genomes_sorted.fasta > root/selections/gclust/0.99/${species}/gclust_0.99
 ```
 
-# Post-processing
+## Post-processing
 After running the tools, the selected reference genomes are all located in the `root/selection` folder for all species. From here, we proceed with three steps. First, we generate index files that store all genomes (as their filenames) and their corresponding species. This can be done by running the `generate_all_selection.py` Python script in the `scripts` folder:
 ```bash
 python scripts/generate_all_selection.py --genomes root/genomes --output root/reference_sets --a2t
@@ -177,10 +177,10 @@ In the final step we create files similar to the `all.tsv` for every selection, 
 python -u root/scripts/bacteria/generate_selection_files.py --genomes root/genomes --selection root/selections/${method}/${threshold} --filename ${method}_${threshold} --output root/reference_sets
 ```
 Similar to before, this will create tab-delimited files called `${method}_${threshold}.tsv` in `root/reference_sets` as well as the subfolders thereof for the experiments in order to only include the selections for considered species. \
-**NOTE**: This should be run for every selection method and threshold in order to proceed to building the profiling indexes!
+**NOTE**: This should be run for every selection method (including `all`) and threshold in order to proceed to building the profiling indexes!
 
 ## Index building
-With all the reference sets,w e can now build the profiling indices. In our work we used:
+With all the reference sets, we can now build the profiling indices. In our work we used:
 - Kraken2 (v2.1.3) + Bracken (v1.0.0)
 - BWA (v0.7.18) + DUDes (v0.10.0)
 - Centrifuge (v1.0.4.2)
@@ -356,3 +356,12 @@ samtools view -F 4 -h root/estimations/${experiment}/dudes/sample_${sample}/${me
 dudes -s root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}_filtered.sam -d root/indexes/${experiment}/dudes/${method}_${threshold}/dudes_index/dudes.npz -o root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}_dudes -l species
 ```
 This results in a `${method}_${threshold}_dudes` file that contains the final abundance estimates.
+
+## Analysis
+To analyse the results obtained we will assume that the workflow was ran as described above. Additionally, for resource usage monitoring, we assume that commands were run with `/usr/bin/time` and that the output is stored somewhere.
+
+### Reference set comparisons
+In `scripts/bacteria/analysis_reference_sets.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the reference set comparisons. 
+
+### Accuracy comparisons
+In `scripts/bacteria/analysis_accuracy.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the accuracy calculations.

@@ -42,14 +42,19 @@ root
 |   └── state
 ├── samples
 │   ├── sample_1
-│   |   ├── sample_1_1.fq
-|   |   ├── sample_1_2.fq
+│   |   ├── wwsim_B.1.1.7_ab1_1.fq
+|   |   ├── wwsim_B.1.1.7_ab1_2.fq
+│   |   ├── wwsim_B.1.1.7_ab10_1.fq
+|   |   └── wwsim_B.1.1.7_ab10_2.fq
 ├── estimations
 │   ├── global
 │   |   ├── sample_1
-|   |   |   ├── method_1_predictions
-|   |   |   ├── method_2-threshold_1_predictions
-|   |   |   └── method_2-threshold_2_predictions
+|   |   |   ├── method_1_ab1_predictions
+|   |   |   ├── method_2-threshold_1_ab1_predictions
+|   |   |   ├── method_2-threshold_2_ab1_predictions
+|   |   |   ├── method_1_ab10_predictions
+|   |   |   ├── method_2-threshold_1_ab10_predictions
+|   |   |   └── method_2-threshold_2_ab10_predictions
 |   ├── country
 |   └── state
 └── scripts
@@ -173,7 +178,7 @@ Afterwards, we run the `generate_selection_files.py` Python script in `scripts/v
 python -u scripts/virus/generate_selection_files.py --genomes root/genomes/${location_type} --selection root/selections/${location_type}/${method}/${threshold} --filename ${method}_${threshold} --output root/reference_sets/${location_type}
 ```
 Running this will create a tab-delimited file called `${method}_${threshold}.tsv`, similar to `all.tsv`. Additionally, if a method was unable to produce a selection for a lineage, this script will randomly select a genome from that lineage in order to represent it in the reference set.\
-**NOTE**: This should be run for every experiment, selection method and threshold in order to proceed to building the kallisto indexes!
+**NOTE**: This should be run for every experiment, selection method (including `all`) and threshold in order to proceed to building the kallisto indexes!
 
 ## Index building
 With all the reference sets, we can now build kallisto indexes. In our experiments we followed the VLQ pipeline with kallisto v0.44.0 using the `compile_kallisto.sh` script in `scripts/virus`:
@@ -212,3 +217,9 @@ kallisto quant -b 0 -i root/indexes/${location_type}/${method}_${threshold}.idx 
 python -u output_abundances.py -m 0.1 -o root/estimations/${location_type}/${sample}/${method}_${threshold}_predictions.tsv --metadata root/metadata.tsv root/estimations/${location_type}/${sample}/${method}_${threshold}/abundance.tsv
 ```
 This will store the direct output of kallisto in `root/estimations/${location_type}/${sample}/${method}_${threshold}/abundance.tsv` and the filtered (at 0.1% abundance) lineage abundance estimations in `root/estimations/${location_type}/${sample}/${method}_${threshold}_predictions.tsv`.
+
+## Analysis
+To analyse the results obtained we will assume that the workflow was ran as described above. Additionally for most of the resource usage monitoring, we assume that commands were run with `/usr/bin/time/` and that the output is stored somewhere.
+
+### Reference set comparisons
+In `scripts/virus/analysis_reference_sets.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the reference set comparisons.

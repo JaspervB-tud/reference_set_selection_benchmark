@@ -365,3 +365,7 @@ In `scripts/bacteria/analysis_reference_sets.ipynb` we provide a Jupyter noteboo
 
 ### Accuracy comparisons
 In `scripts/bacteria/analysis_accuracy.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the accuracy calculations.
+
+### Runtime comparisons
+In `scripts/bacteria/analsys_runtime.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the runtime calculations. \
+**NOTE**: for the bacterial results these strongly rely on the `/usr/bin/time` command!

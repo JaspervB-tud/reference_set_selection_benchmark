@@ -128,6 +128,8 @@ def main():
 						cur_selection = read_meshclust_output(file_path)
 					elif "vsearch" in args.selection:
 						cur_selection = read_vsearch_output(file_path)
+					elif "all" in args.selection:
+						cur_selection = files_per_species[species] #all genomes selected
 					else:
 						cur_selection = read_standard_output(file_path)
 					# Store selection

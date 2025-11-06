@@ -1,3 +1,6 @@
+# Adapted from baymlab/wastewater_analysis (MIT License)
+# Original copyright: J.A. Baaijens et al.
+
 LINEAGE=$1
 REF_GENOME=$2
 BASE_DIR=$3

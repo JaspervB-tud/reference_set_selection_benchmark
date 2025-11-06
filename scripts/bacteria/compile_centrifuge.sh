@@ -7,13 +7,12 @@ A2T_LOC=$6
 
 # Create output folders
 mkdir -p "${INDEX_FOLDER}/${METHOD}"
-mkdir -p "${INDEX_FOLDER}/${METHOD}/taxonomy"
-mkdir -p "${INDEX_FOLDER}/${METHOD}/library"
+mkdir -p "${INDEX_FOLDER}/${METHOD}/index"
 mkdir -p "${INDEX_FOLDER}/${METHOD}/genomes"
+mkdir -p "${INDEX_FOLDER}/${METHOD}/taxonomy"
 
-# Copy taxonomy files
-cp ${TAXONOMY_FOLDER}/* "${INDEX_FOLDER}/${METHOD}/taxonomy"
-cp ${A2T_LOC} "${INDEX_FOLDER}/${METHOD}/taxonomy"
+# Centrifuge requires a particular format for the taxonomy mapping (seqid \t taxid)
+awk 'NR > 1 {print $2 "\t" $3}' "${A2T_LOC}" > "${INDEX_FOLDER}/${METHOD}/taxonomy/nucl_gb.accession2taxid"
 
 line_num=0
 # Add genomes to the database and remove individual genomes afterwards, saving only the aggregated genome file
@@ -32,12 +31,11 @@ while IFS=$'\t' read -r SPECIES SEQUENCE col3; do
     rm "${INDEX_FOLDER}/${METHOD}/genomes/${SEQUENCE}"
 done < "${REFSET_FOLDER}/${METHOD}.tsv"
 
-# Add to Kraken2 library (default parameters, number of threads can be specified by user using --threads flag)
-kraken2-build --add-to-library "${INDEX_FOLDER}/${METHOD}/genomes/all_genomes.fasta" --db "${INDEX_FOLDER}/${METHOD}" --threads 32
-# Remove fasta, no longer needed here
-rm -r ${INDEX_FOLDER}/${METHOD}/genomes
 # Build index
-kraken2-build --build --db "${INDEX_FOLDER}/${METHOD}"
-bracken-build -d "${INDEX_FOLDER}/${METHOD}" -l 150 -t 32
-# Clean up intermediate files
-kraken2-build --clean --db "${INDEX_FOLDER}/${METHOD}"
+centrifuge-build -p 32 --conversion-table ${INDEX_FOLDER}/${METHOD}/taxonomy/nucl_gb.accession2taxid \
+    --taxonomy-tree ${TAXONOMY_FOLDER}/nodes.dmp \
+    --name-table ${TAXONOMY_FOLDER}/names.dmp \
+    "${INDEX_FOLDER}/${METHOD}/genomes/all_genomes.fasta" "${INDEX_FOLDER}/${METHOD}/index/${METHOD}"
+
+# Remove genomes after building
+rm -r "${INDEX_FOLDER}/${METHOD}/genomes"

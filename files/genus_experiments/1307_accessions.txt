@@ -1,0 +1,10 @@
+GCA_000876695.1_Velvet_assembly_genomic.fna
+GCA_000876775.1_Velvet_assembly_genomic.fna
+GCA_000876855.1_Velvet_assembly_genomic.fna
+GCA_000876875.1_Velvet_assembly_genomic.fna
+GCA_000876895.1_Velvet_assembly_genomic.fna
+GCA_000876995.1_Velvet_assembly_genomic.fna
+GCA_000877075.1_Velvet_assembly_genomic.fna
+GCA_000877095.1_Velvet_assembly_genomic.fna
+GCA_000877175.1_Velvet_assembly_genomic.fna
+GCA_000940715.1_Velvet_assembly_genomic.fna

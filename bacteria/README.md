@@ -14,6 +14,14 @@ root
 |   │   └── accession_2.fa
 │   └── species_2
 |   │   └── accession_3.fa
+├── simulation_genomes
+│   ├── genus_experiments
+|   │   ├── simulation_species_1
+│   |   |   ├── simulation_accession_1.fa
+│   |   |   └── simulation_accession_2.fa
+|   │   └── simulation_species_2
+│   ├── family_experiments
+│   └── order_experiments
 ├── selections
 │   ├── method_1
 │   ├── method_2_threshold_1
@@ -47,16 +55,22 @@ root
 ├── samples
 │   ├── genus_experiments
 │   |   ├── sample_1
-│   |   |   ├── sample_1_1.fq
-|   |   |   └── sample_1_2.fq
+│   |   |   ├── sample_1.fq <- forward reads
+|   |   |   └── sample_2.fq <- reverse reads
+│   |   ├── sample_2
+│   |   |   ├── sample_1.fq
+|   |   |   └── sample_2.fq
 │   ├── family_experiments
 |   └── order_experiments
 ├── estimations
 │   ├── genus_experiments
-│   |   ├── sample_1
-│   |   |   ├── method_1_predictions
-|   |   |   ├── method_2-threshold_1_predictions
-|   |   |   └── method_2-threshold_2_predictions
+│   |   ├── profiler_1
+│   |   |	├── sample_1
+│   |   |   |	├── method_1_predictions
+|   |   |   |	├── method_2-threshold_1_predictions
+|   |   |   |	└── method_2-threshold_2_predictions
+│   |   ├── profiler_2
+│   |   └── profiler_3
 │   ├── family_experiments
 |   └── order_experiments
 ├── taxdmp
@@ -172,3 +186,173 @@ With all the reference sets,w e can now build the profiling indices. In our work
 - Centrifuge (v1.0.4.2)
 
 ### Kraken2 + Bracken
+For Kraken2+Bracken we have provided a simple bash script called `compile_kraken2-bracken.sh` that gathers all target genomes, and builds a combined index. The script can be called for every experiment as follows:
+```bash
+bash scripts/bacteria/compile_kraken2-bracken.sh ${method}_${threshold} root/reference_sets/${experiment} root/indexes/${experiment}/bracken root/genomes root/taxonomy root/reference_sets/nucl_gb.accession2taxid
+```
+This creates a combined Kraken2 and Bracken index for a given method-threshold combination and experiment, which is located in `/root/indexes/${experiment}/bracken/${method}_${threshold}`.
+
+### Centrifuge
+For Centrifuge we have a similar bash script called `compile_centrifuge.sh` which we call like:
+```bash
+bash scripts/bacteria/compile_centrifuge.sh ${method}_${threshold} root/reference_sets/${experiment} root/indexes/${experiment}/centrifuge root/genomes root/taxonomy root/reference_sets/nucl_gb.accession2taxid
+```
+
+### BWA + DUDes
+Finally, for BWA with DUDes we use the script called `compile_bwa-dudes.sh` which can be called in a similar fashion:
+```bash
+bash scripts/bacteria/compile_bwa-dudes.sh ${method}_${threshold} root/reference_sets/${experiment} root/indexes/${experiment}/dudes root/genomes root/taxonomy root/reference_sets/nucl_gb.accession2taxid
+```
+
+## Profiling
+The first step for obtaining the profiling results is to simulate reads. For our bacterial experiments, we simulated paired-end reads using ART v2016.06.05 from the top 10 (sorted according to completeness) genome assemblies that were "Scaffold" or "Chromosome" status (see Zenodo). Additionally, we store the files called `${experiment}_species.txt` and `${taxid}_accessions.txt` (see `files` folder) that contain the species and accessions used for simulating reads. Using these files, we simulated independent samples with approximately equal abundance (in terms of the number of reads) for every species using the following Python script using ART v2016.06.05:
+```python
+import subprocess
+import os
+import random
+import shutil
+from pathlib import Path
+import math
+import multiprocessing
+from Bio import SeqIO
+
+def generate_commands():
+	"""
+	This function will generate bash commands to perform the ART simulations using the parameters defined as constants below.
+	"""
+	NUM_SAMPLES 	= 10
+	NUM_READS 		= 5_000_000 #approximate number of reads per sample
+	FRAGMENT_SIZE 	= 270
+	FRAGMENT_STD	= 20
+	READ_LENGTH		= 150
+	TECHONOLOGY		= "HS25"
+	OUTPUT_PREFIX 	= f"root/samples"
+
+	command_sets = [] #a single command set per sample -> this way an entire sample can be generated and processed in a single go (using 1 core)
+	seed = 1
+
+	for experiment_type in ["order_experiments", "family_experiments", "genus_experiments"]:
+		print(f"Generating reads for {experiment_type}")
+		# Retrieve list of species
+		species = []
+        with open(f"files/{experiment_type}/{experiment_type}_species.txt", "r") as f_in:
+			next(f_in) #skip header
+			for line in f_in:
+				line = line.strip().split("\t")
+				species.append(line[0])
+		species.sort()
+		# Retrieve list of accessions per species
+		accessions_per_species = {}
+		length_per_accession = {}
+		for cur_species in species:
+			accessions_per_species[cur_species] = []
+            with open(f"files/{experiment_type}/{cur_species}_accessions.txt", "r") as f_in:
+				for line in f_in:
+					line = line.strip()
+					accessions_per_species[cur_species].append(line)
+					length_per_accession[line] = 0
+                    with open(f"root/simulation_genomes/${experiment_type}/{cur_species}/{line}", "r") as fasta_file:
+						for record in SeqIO.parse(fasta_file, "fasta"):
+							length_per_accession[line] += len(record.seq)
+			accessions_per_species[cur_species].sort()
+		# Loop over samples
+		for sample in range(1, NUM_SAMPLES+1):
+			commands = []
+			# Generate equal abundance samples
+			num_reads_per_species = {cur_species: math.ceil(NUM_READS / 5) for cur_species in species}
+			for cur_species in species:
+				for cur_accession in accessions_per_species[cur_species]:
+					num_reads_per_accession = math.ceil(num_reads_per_species[cur_species] * 0.1) #10 genomes for every species -> 1/10 abundance for all of them
+                    output_path = f"{OUTPUT_PREFIX}/{experiment_type}/{sample}/{cur_species}" #this is output for reads per species
+					output_path_object = Path(output_path)
+					output_path_object.mkdir(parents=True, exist_ok=True)
+					# We exclude the alignment files simply due to the space occupation of these files
+					commands.append([
+						"art_illumina",
+						"-p",
+                        "-i", f"root/simulation_genomes/{experiment_type}/{cur_species}/{cur_accession}",
+						"-l", f"{READ_LENGTH}",
+						"-f", f"{num_reads_per_accession * FRAGMENT_SIZE / length_per_accession[cur_accession]:.5f}", #this is to guarantee uniform coverage
+						"-ss", "HS25",
+						"-m", f"{FRAGMENT_SIZE}",
+						"-s", f"{FRAGMENT_STD}",
+						"-o", f"{output_path}/{cur_accession}_seed-{seed}_",
+						"-rs", f"{seed}",
+						"-na"
+					])
+					seed += 1
+			command_sets.append(commands)
+    return command_sets
+
+def run_subprocess(command_set):
+	"""
+	The idea is that every command_set corresponds to a sample, and thus this function will:
+		1) generate the required simulated reads
+		2) combine the reads into a single file (since reads will be generated separately for every genome)
+		3) remove the initial .fq files and only retain the combined files
+	"""
+	fwd_paths = []
+	rev_paths = []
+	reads_per_species = {}
+	# Generate read sets
+	for command in command_set:
+		fwd_paths.append(f"{command[-4]}1.fq")
+		rev_paths.append(f"{command[-4]}2.fq")
+		subprocess.run(command)
+		cur_species = f"{command[-4].split('/')[-2]}"
+		cur_readcount = int(subprocess.run(["grep", "-c", "@", fwd_paths[-1]], capture_output=True, text=True).stdout.strip())
+		if cur_species not in reads_per_species:
+			reads_per_species[cur_species] = 0
+		reads_per_species[cur_species] += cur_readcount
+	# Combine forward reads and remove old files
+	with open(f"{'/'.join(command[-4].split('/')[:-2])}/sample_1.fq", "w") as out_handle:
+		for fq_file in fwd_paths:
+			with open(fq_file, "r") as in_handle:
+				SeqIO.write(SeqIO.parse(in_handle, "fastq"), out_handle, "fastq")
+	# Combine reverse reads and remove old files
+	with open(f"{'/'.join(command[-4].split('/')[:-2])}/sample_2.fq", "w") as out_handle:
+		for fq_file in rev_paths:
+			with open(fq_file, "r") as in_handle:
+				SeqIO.write(SeqIO.parse(in_handle, "fastq"), out_handle, "fastq")
+	# Remove folders with isolated reads per species
+	prefix = "/".join(fwd_paths[0].split("/")[:-2])
+	for species in reads_per_species:
+		subprocess.run(["rm", "-r", f"{prefix}/{species}"])
+
+if __name__ == "__main__":
+    # Currently, this uses 16 cores to process all the ART commands
+    NUM_CORES = 16
+    commands = generate_commands()
+    with multiprocessing.Pool(NUM_CORES) as pool:
+        pool.map(run_subprocess, commands)
+```
+This script creates 10 mixed metagenomic samples per experiment with approximately 5,000,000 paired-end reads of 150bp (270bp fragments, 10bp stdev) and equal read-based abundance for all species, which are stored in `root/samples/${experiment}/sample_${sample}/sample_{1,2}.fq`. With the simulated samples, we can call the profilers to estimate the relative abundances of species using the constructed reference sets.
+
+### Kraken2 + Bracken
+Running Kraken2 and Bracken is done in two subsequent steps: first running Kraken2 and then running Bracken to get species-level abundance estimates. This was done for every sample and method-threshold combination as follows:
+```bash
+kraken2 --db root/indexes/${experiment}/bracken/${method}_${threshold} --threads 16 --report root/estimations/${experiment}/bracken/sample_${sample}/${method}_${threshold}.kreport --paired root/samples/${experiment}/sample_${sample}/sample_1.fq root/samples/${experiment}/sample_${sample}/sample_2.fq > root/estimations/${experiment}/bracken/sample_${sample}/${method}_${threshold}.kraken #generates Kraken2 output
+bracken -d root/indexes/${experiment}/bracken/${method}_${threshold} -i root/estimations/${experiment}/bracken/sample_${sample}/${method}_${threshold}.kreport -o root/estimations/${experiment}/bracken/sample_${sample}/${method}_${threshold}.bracken -r 150 -l S #generates Bracken output
+```
+This produces several output files, of which the `${method}_${threshold}.bracken` file is the most relevant as it will contain the species-level abundances (although the `${method}_${threshold}.kreport` files can be used to infer the number of unclassified reads).
+
+### Centrifuge
+Centrifuge can be run per sample, reference set and experiment as follows:
+```bash
+centrifuge -p 16 -x root/indexes/${experiment}/centrifuge/${method}_${threshold}/index/${method}_${threshold} -1 root/samples/${experiment}/sample_${sample}/sample_1.fq -2 root/samples/${experiment}/sample_${sample}/sample_2.fq -S root/estimations/${experiment}/centrifuge/sample_${sample}/${method}_${threshold}.sam --report-file root/estimations/${experiment}/centrifuge/sample_${sample}/${method}_${threshold}.report
+```
+This produces an alignment-like file (`${method}_${threshold}.sam`) as well as a report file (`${method}_${threshold}.report`) which will contain the abundance estimates.
+
+### BWA + DUDes
+DUDes also requires multiple steps. First we use BWA-mem to align reads to the reference index:
+```bash
+bwa mem -t 16 -v 1 root/indexes/${experiment}/dudes/${method}_${threshold}/bwa_index/bwa root/samples/${experiment}/sample_${sample}/sample_1.fq root/samples/${experiment}/sample_${sample}/sample_2.fq > root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}.sam
+```
+After running BWA-mem we filter out unaligned reads and finally run DUDes on the filtered alignment file:
+```bash
+# Filter unaligned and calculate stats
+samtools view -F 4 -h root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}.sam > root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}_filtered.sam
+# Run DUDes
+dudes -s root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}_filtered.sam -d root/indexes/${experiment}/dudes/${method}_${threshold}/dudes_index/dudes.npz -o root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}_dudes -l species
+```
+This results in a `${method}_${threshold}_dudes` file that contains the final abundance estimates.

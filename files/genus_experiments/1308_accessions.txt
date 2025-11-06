@@ -1,0 +1,10 @@
+GCA_001266475.1_ASM126647v1_genomic.fna
+GCA_001624895.1_ASM162489v1_genomic.fna
+GCA_029866985.1_ASM2986698v1_genomic.fna
+GCA_950101905.1_S-thermophilus_H10bM5_genomic.fna
+GCA_950101945.1_S-thermophilus_29bM1_genomic.fna
+GCA_950102035.1_S-thermophilus_26bM1_genomic.fna
+GCA_950102055.1_S-thermophilus_H11bM2_genomic.fna
+GCA_950102065.1_S-thermophilus_H11M1b_genomic.fna
+GCA_950102075.1_S-thermophilus_H11M1c_genomic.fna
+GCA_950102095.1_S-thermophilus_H11M1a_genomic.fna

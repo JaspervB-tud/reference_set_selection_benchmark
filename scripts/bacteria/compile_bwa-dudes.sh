@@ -7,13 +7,9 @@ A2T_LOC=$6
 
 # Create output folders
 mkdir -p "${INDEX_FOLDER}/${METHOD}"
-mkdir -p "${INDEX_FOLDER}/${METHOD}/taxonomy"
-mkdir -p "${INDEX_FOLDER}/${METHOD}/library"
+mkdir -p "${INDEX_FOLDER}/${METHOD}/bwa_index"
+mkdir -p "${INDEX_FOLDER}/${METHOD}/dudes_index"
 mkdir -p "${INDEX_FOLDER}/${METHOD}/genomes"
-
-# Copy taxonomy files
-cp ${TAXONOMY_FOLDER}/* "${INDEX_FOLDER}/${METHOD}/taxonomy"
-cp ${A2T_LOC} "${INDEX_FOLDER}/${METHOD}/taxonomy"
 
 line_num=0
 # Add genomes to the database and remove individual genomes afterwards, saving only the aggregated genome file
@@ -32,12 +28,17 @@ while IFS=$'\t' read -r SPECIES SEQUENCE col3; do
     rm "${INDEX_FOLDER}/${METHOD}/genomes/${SEQUENCE}"
 done < "${REFSET_FOLDER}/${METHOD}.tsv"
 
-# Add to Kraken2 library (default parameters, number of threads can be specified by user using --threads flag)
-kraken2-build --add-to-library "${INDEX_FOLDER}/${METHOD}/genomes/all_genomes.fasta" --db "${INDEX_FOLDER}/${METHOD}" --threads 32
-# Remove fasta, no longer needed here
-rm -r ${INDEX_FOLDER}/${METHOD}/genomes
-# Build index
-kraken2-build --build --db "${INDEX_FOLDER}/${METHOD}"
-bracken-build -d "${INDEX_FOLDER}/${METHOD}" -l 150 -t 32
-# Clean up intermediate files
-kraken2-build --clean --db "${INDEX_FOLDER}/${METHOD}"
+# Build BWA index
+bwa index -b 50000000 "${INDEX_FOLDER}/${METHOD}/genomes/all_genomes.fasta" \
+    -p "${INDEX_FOLDER}/${METHOD}/bwa_index/bwa"
+
+# Build DUDes index
+dudesdb -m 'av' -f "${INDEX_FOLDER}/${METHOD}/genomes/all_genomes.fasta" \
+    -n "${TAXONOMY_FOLDER}/nodes.dmp" \
+    -a "${TAXONOMY_FOLDER}/names.dmp" \
+    -g "${A2T_LOC}" \
+    -o "${INDEX_FOLDER}/${METHOD}/dudes_index/dudes" \
+    -t 8
+
+# Remove genomes after building
+rm -r "${INDEX_FOLDER}/${METHOD}/genomes"

@@ -229,4 +229,4 @@ In `scripts/virus/analysis_accuracy.ipynb` we provide a Jupyter notebook that de
 
 ### Runtime comparisons
 In `scripts/virus/analysis_runtime.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the runtime calculations. \
-**NOTE**: Due to technical problems, the output of `/usr/bin/time` for some of the selection steps were lost. In the notebook these values are hardcoded as the values obtained through SLURM's `seff` commands!
+**NOTE**: Due to technical problems, the output of `/usr/bin/time` for the selection steps were lost. In the notebook these values are hardcoded as the values obtained through SLURM's `seff` commands!

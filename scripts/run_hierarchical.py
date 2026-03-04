@@ -24,30 +24,32 @@ def read_matrix(matrix_path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--matrix", type=str, required=True)
-    parser.add_argument("--threshold", type=float, required=True) #note that this is a DISTANCE threshold (1 - similarity threshold)
+    parser.add_argument("--threshold", type=float, required=True)
     parser.add_argument("--output", type=str, required=True)
     args = parser.parse_args()
+
+    threshold = 1.0 - args.threshold #convert similarity threshold to distance threshold
     
     distance_matrix, names = read_matrix(args.matrix)
     nonzeros = np.array([distance_matrix[i,j] for i in range(distance_matrix.shape[0]) for j in range(i) if distance_matrix[i,j] != 0])
     for linkage_type in ["single", "complete"]:
         if len(nonzeros) > 0: #if there are nonzeros, perform clustering, otherwise output first genome
             Z = linkage(squareform(distance_matrix), method=linkage_type)    
-            clusters = fcluster(Z, t=args.threshold, criterion="distance")
+            clusters = fcluster(Z, t=threshold, criterion="distance")
             representatives = {}
             for cluster in np.unique(clusters):
                 indices = np.where(clusters == cluster)[0]
                 if len(indices) == 1:
                     representatives[cluster] = names[indices[0]]
-                else:
+                else: # select medoid of cluster
                     intra_distances = distance_matrix[np.ix_(indices, indices)]
-                    centroid = np.argmin(np.sum(intra_distances, axis=1))
-                    representatives[cluster] = names[indices[centroid]]
+                    medoid = np.argmin(np.sum(intra_distances, axis=1))
+                    representatives[cluster] = names[indices[medoid]]
         else:
             representatives = {0: names[0]}
         
         os.makedirs(args.output, exist_ok=True)
-        with open(f"{args.output}/{linkage_type}-linkage_{args.threshold}", "w") as f_out: #write output
+        with open(f"{args.output}/{linkage_type}-linkage_{args.threshold}", "w") as f_out: #write output, retain original threshold in filename
             for cluster in representatives:
                 f_out.write(representatives[cluster] + "\n")
     

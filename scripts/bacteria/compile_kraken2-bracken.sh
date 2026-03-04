@@ -13,7 +13,7 @@ mkdir -p "${INDEX_FOLDER}/${METHOD}/genomes"
 
 # Copy taxonomy files
 cp ${TAXONOMY_FOLDER}/* "${INDEX_FOLDER}/${METHOD}/taxonomy"
-cp ${A2T_LOC} "${INDEX_FOLDER}/${METHOD}/taxonomy"
+cp ${A2T_LOC} "${INDEX_FOLDER}/${METHOD}/taxonomy/nucl_gb.accession2taxid"
 
 line_num=0
 # Add genomes to the database and remove individual genomes afterwards, saving only the aggregated genome file

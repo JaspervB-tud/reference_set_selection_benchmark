@@ -6,7 +6,7 @@ import random
 # Scripts for gathering genomes
 def read_standard_output(selection_path):
 	"""
-	This covers selections made by: hierarchical, centroid, ggrasp
+	This covers selections made by: hierarchical, medoid, ggrasp
 	"""
 	selection = []
 	with open(selection_path, "r") as f_in:

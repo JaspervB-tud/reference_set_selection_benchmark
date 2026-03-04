@@ -44,8 +44,8 @@ def main():
                         representatives[cluster] = names[indices[0]]
                     else:
                         intra_distances = distance_matrix[np.ix_(indices, indices)]
-                        centroid = np.argmin(np.sum(intra_distances, axis=1))
-                        representatives[cluster] = names[indices[centroid]]
+                        medoid = np.argmin(np.sum(intra_distances, axis=1))
+                        representatives[cluster] = names[indices[medoid]]
                 os.makedirs(args.output, exist_ok=True)
                 with open(f"{args.output}/{linkage_type}-linkage_{PERCENTILES[i]}", "w") as f_out: #write output
                     for cluster in representatives:

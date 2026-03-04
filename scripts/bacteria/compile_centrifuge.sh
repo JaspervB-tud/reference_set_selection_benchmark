@@ -12,7 +12,7 @@ mkdir -p "${INDEX_FOLDER}/${METHOD}/genomes"
 mkdir -p "${INDEX_FOLDER}/${METHOD}/taxonomy"
 
 # Centrifuge requires a particular format for the taxonomy mapping (seqid \t taxid)
-awk 'NR > 1 {print $2 "\t" $3}' "${A2T_LOC}" > "${INDEX_FOLDER}/${METHOD}/taxonomy/nucl_gb.accession2taxid"
+cp "${A2T_LOC}" "${INDEX_FOLDER}/${METHOD}/taxonomy/nucl_gb.accession2taxid"
 
 line_num=0
 # Add genomes to the database and remove individual genomes afterwards, saving only the aggregated genome file

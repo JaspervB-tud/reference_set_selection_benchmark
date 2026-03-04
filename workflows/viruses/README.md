@@ -67,7 +67,7 @@ The downsampling and filtering step can be applied by running the `preprocessing
 
 ## Genome selection
 The next step in our experiments is to select reference genomes to be used by VLQ's profiling pipeline. In the viral experiments we used the following approaches:
-- MASH (v2.3) + picking a centroid per lineage
+- MASH (v2.3) + picking a medoid per lineage
 - MASH (v2.3) + picking based on hierarchical clustering (single & complete linkage)
 - MASH (v2.3) + GGRaSP (v1.3)
 - MeShClust (Identity v1.2, MeShClust v2.0)
@@ -90,12 +90,12 @@ python -u scripts/convert_matrix.py --matrix root/genomes/${location_type}/${lin
 ```
 This produces a `converted_matrix.mat` file with the full distance matrix that can be removed after running GGRaSP
 
-### Centroid selection
-To obtain the centroid genome for every lineage, we used the `scripts/run_centroid.py` Python script as follows:
+### Medoid selection
+To obtain the medoid genome for every lineage, we used the `scripts/run_medoid.py` Python script as follows:
 ```bash
-python -u scripts/run_centroid.py --matrix root/genomes/${location_type}/${lineage}/mash_distances.dist --output root/selections/${location_type}/centroid/${lineage}
+python -u scripts/run_medoid.py --matrix root/genomes/${location_type}/${lineage}/mash_distances.dist --output root/selections/${location_type}/medoid/${lineage}
 ```
-Afterwards, the selection can be found in `root/selections/${location_type}/centroid/${lineage}` for every location and lineage.
+Afterwards, the selection can be found in `root/selections/${location_type}/medoid/${lineage}` for every location and lineage.
 
 ### Hierarchical clustering selection (dRep-derived approach)
 Due to the high similarity between SARS-CoV-2 genomes of the same lineage, we used dynamic cut-off thresholds based on the 1st, 5th, 10th, 25th, 50th, 90th and 99th distance percentiles. We run the `scripts/virus/run_hierarchical.py` Python script as follows:
@@ -144,9 +144,9 @@ gclust -threads 64 -minlen 41 -chunk 400 -ext 1 -sparse 4 -nuc -loadall -rebuild
 #### VSEARCH selection
 We ran VSEARCH with the `--cluster_fast` option using the CD-HIT definition for sequence similarity, again using similarity thresholds of 95%, 99% and 99.9%:
 ```bash
-vsearch --cluster_fast root/genomes/${location_type}/${lineage}/all_genomes.fasta --centroids root/selections/${location_type}/vsearch/0.95/${lineage}/vsearch_0.95 --id 0.95 --iddef 0 --qmask none --threads 64
-vsearch --cluster_fast root/genomes/${location_type}/${lineage}/all_genomes.fasta --centroids root/selections/${location_type}/vsearch/0.99/${lineage}/vsearch_0.99 --id 0.99 --iddef 0 --qmask none --threads 64
-vsearch --cluster_fast root/genomes/${location_type}/${lineage}/all_genomes.fasta --centroids root/selections/${location_type}/vsearch/0.999/${lineage}/vsearch_0.999 --id 0.999 --iddef 0 --qmask none --threads 64
+vsearch --cluster_fast root/genomes/${location_type}/${lineage}/all_genomes.fasta --medoids root/selections/${location_type}/vsearch/0.95/${lineage}/vsearch_0.95 --id 0.95 --iddef 0 --qmask none --threads 64
+vsearch --cluster_fast root/genomes/${location_type}/${lineage}/all_genomes.fasta --medoids root/selections/${location_type}/vsearch/0.99/${lineage}/vsearch_0.99 --id 0.99 --iddef 0 --qmask none --threads 64
+vsearch --cluster_fast root/genomes/${location_type}/${lineage}/all_genomes.fasta --medoids root/selections/${location_type}/vsearch/0.999/${lineage}/vsearch_0.999 --id 0.999 --iddef 0 --qmask none --threads 64
 ```
 In contrast to other selection tools, this outputs a fasta file containing the full selected genomes, rather than identifiers of sequences which we will account for later.
 

@@ -15,6 +15,11 @@ root
 │   └── species_2
 |   │   └── accession_3.fa
 ├── simulation_genomes
+│   ├── strain_experiments
+|   │   ├── simulation_strain_1
+│   |   |   ├── simulation_accession_1.fna
+│   |   |   └── simulation_accession_2.fna
+|   │   └── simulation_strain_2
 │   ├── genus_experiments
 |   │   ├── simulation_species_1
 │   |   |   ├── simulation_accession_1.fna
@@ -53,15 +58,17 @@ root
 │   ├── family_experiments
 |   └── order_experiments
 ├── samples
-│   ├── genus_experiments
-│   |   ├── sample_1
-│   |   |   ├── sample_1.fq <- forward reads
-|   |   |   └── sample_2.fq <- reverse reads
-│   |   ├── sample_2
-│   |   |   ├── sample_1.fq
-|   |   |   └── sample_2.fq
-│   ├── family_experiments
-|   └── order_experiments
+│   ├── 500000
+│	│   ├── genus_experiments
+│	│   |   ├── sample_1
+│	│   |   |   ├── sample_1.fq <- forward reads
+│	|   |   |   └── sample_2.fq <- reverse reads
+│	│   |   ├── sample_2
+│	│   |   |   ├── sample_1.fq
+│	|   |   |   └── sample_2.fq
+│	│   ├── family_experiments
+│	|   └── order_experiments
+|   └── 5000000
 ├── estimations
 │   ├── genus_experiments
 │   |   ├── profiler_1
@@ -80,11 +87,12 @@ root
 ```
 
 ## Data collection
-For our bacterial experiments, we used all available "Complete Genome" status from NCBI Assembly (now NCBI Genomes) downloaded on October 9th, 2024. In this, we only included species that had at least one such assembly for our analysis. Throughout this, we assume that the individual genomes are located in the `root/genomes/${species}` folders for all corresponding species.
+For our bacterial experiments, we used all available "Complete Genome" status from NCBI Assembly (now NCBI Genomes) downloaded on October 9th, 2024. In this, we only included species and strains that had at least one such assembly for our analysis. Throughout this, we assume that the individual genomes are located in the `root/genomes/${species,strain}` folders for all corresponding species and *Escherichia coli* strains. \
+**NOTE**: although we assume that all individual genomes are stored in `root/genomes/${taxid}`, both for strain taxids, as well as species taxids.
 
 ## Genome selection
 The first step in our experiments is to perform reference genome selection. For the bacterial experiments we used the following approaches:
-- MASH (v2.3) + picking a centroid per lineage
+- MASH (v2.3) + picking the medoid per species/strain
 - MASH (v2.3) + picking based on hierarchical clustering (single & complete linkage)
 - MASH (v2.3) + GGRaSP (v1.3)
 - MeShClust (Identity v1.2, MeShClust v2.0)
@@ -92,92 +100,83 @@ The first step in our experiments is to perform reference genome selection. For 
 Unfortunately, due to scaling problems, we were unable to run VSEARCH for these experiments.
 
 ### MASH
-We first generated MASH sketches for all genomes, which are used to estimate (dis)similarities. For all species with at least 2 genomes and for all experiments (genus, family, order), we now run the following commands:
+We first generated MASH sketches for all genomes, which are used to estimate (dis)similarities. For all species with at least 2 genomes, and for all species-level experiments (genus-based, family-based, order-based), we ran the following commands:
 ```bash
-mash sketch -p 16 -s 1000 -S 123456 -k 21 -o root/genomes/${species}/mash_sketches.msh root/genomes/${species}/*.fa
-mash triangle -p 16 root/genomes/${species}/mash_sketches.msh > root/genomes/${experiment}/mash_distances.dist
+mash sketch -p ${threads} -s 1000 -S 123456 -k 21 -o root/genomes/${species}/mash_sketches.msh root/genomes/${species}/*.fa
+mash triangle -p ${threads} root/genomes/${species}/mash_sketches.msh > root/genomes/${species}/mash_distances.dist
 ```
-This creates both a MASH sketch for every genome (stored in the `mash_sketches.msh` files) using a sketch size of 1,000 and a k-mer size of 21, as well as a lower triangular distance matrix capturing the dissimilarity between all genomes within a lineage (stored in the `mash_distances.dist` files).
+For the strain-level experiments, we ran the same commands, except we replace `${species}` with `{strain}`, and we use a sketch size of 5,000 and k-mer size of 31. Doing this creates both a MASH sketch for every genome (stored in the `mash_sketches.msh` files), as well as a lower triangular distance matrix capturing the (dis)similarity between all genomes within a species/strain (stored in the `mash_distances.dist` files).
 
 #### Distance matrix conversion
 Since GGRaSP requires a full distance matrix instead of a lower triangular matrix, we used the `scripts/convert_matrix.py` Python script for converting the distance matrices as follows:
 ```bash
-python -u scripts/convert_matrix.py --matrix root/genomes/${species}/mash_distances.dist --output root/genomes/${species}
+python -u scripts/convert_matrix.py --matrix root/genomes/${species,strain}/mash_distances.dist --output root/genomes/${species,strain}
 ```
-This produces a `converted_matrix.mat` file with the full distance matrix that can be removed after running GGRaSP
+This produces a `converted_matrix.mat` file with the full distance matrix that can be removed after running GGRaSP.
 
-### Centroid selection
-To obtain the centroid genome for every species, we used the `scripts/run_centroid.py` Python script as follows:
+### Medoid selection
+To obtain the medoid genome for every species, we used the `scripts/run_medoid.py` Python script as follows:
 ```bash
-python -u scripts/run_centroid.py --matrix root/genomes/${species}/mash_distances.dist --output root/selections/centroid/${species}
+python -u scripts/run_medoid.py --matrix root/genomes/${species,strain}/mash_distances.dist --output root/selections/medoid/${species,strain}
 ```
-Afterwards, the selection can be found in `root/selections/centroid/${species}` for every and bacterial species.
+Afterwards, the selection can be found in `root/selections/medoid/${species,strain}` for every bacterial species and *E. coli* strain.
 
 ### Hierarchical clustering selection (dRep-derived approach)
-Unlike the viral experiments, we use fixed similarity thresholds of 95%, 97% and 99% for the bacterial experiments. To obtain the hierarchical clustering-based selections, we run the `scripts/bacteria/run_hierarchical.py` Python script as follows:
+Unlike the viral experiments, we use fixed similarity thresholds in the bacterial experiments. In the species-level experiments, we used fixed thresholds of 95%, 97% and 99% similarity, and for the strain-level experiments we used fixed threholds of 95%, 99% and 99.9% similarity. To obtain the hierarchical clustering-based selections, we run the `scripts/bacteria/run_hierarchical.py` Python script as follows:
 ```bash
-python -u scripts/bacteria/run_hierarchical.py --matrix root/genomes/${species}/mash_distances.dist --threshold 0.01 --output root/selections/hierarchical/${species} # 0.01 -> 99% similarity
-python -u scripts/bacteria/run_hierarchical.py --matrix root/genomes/${species}/mash_distances.dist --threshold 0.03 --output root/selections/hierarchical/${species} # 0.03 -> 97% similarity
-python -u scripts/bacteria/run_hierarchical.py --matrix root/genomes/${species}/mash_distances.dist --threshold 0.05 --output root/selections/hierarchical/${species} # 0.05 -> 95% similarity
+python -u scripts/bacteria/run_hierarchical.py --matrix root/genomes/${species,strain}/mash_distances.dist --threshold ${threshold} --output root/selections/hierarchical/${species,strain} # for a threshold of 99%, use 0.99
 ```
-This produces selections that can be found in `root/selections/hierarchical/${species}/{single-linkage, complete-linkage}_${threshold}`.
+After running, selections that can be found in `root/selections/hierarchical/${species,strain}/{single-linkage, complete-linkage}_${threshold}`.
 
 ### GGRaSP selection
 After running the `scripts/convert_matrix.py` script, GGRaSP can be run by calling:
 ```bash
-Rscript scripts/run_ggrasp.R root/genomes/${species}/converted_matrix.mat root/selections/ggrasp/${species}
+Rscript scripts/run_ggrasp.R root/genomes/${species,strain}/converted_matrix.mat root/selections/ggrasp/${species,strain}
 ```
-This uses the `scripts/run_ggrasp.R` R script which runs GGRaSP using the automatic threshold selection strategy, and the resulting selections can be found in `root/selections/ggrasp/${species}` for every location type and species. \
-**NOTE**: In our experiments, GGRaSP failed to select reference genomes for several species, often for unclear reasons. 
+This uses the `scripts/run_ggrasp.R` R script which runs GGRaSP using the automatic threshold selection strategy, and the resulting selections can be found in `root/selections/ggrasp/${species,strain}` for every species/strain. \
+**NOTE**: In our experiments, GGRaSP failed to select reference genomes for several species and strains, often for unclear reasons. When this happened, we represented the missing species/strains with a single, randomly chosen genome from the corresponding species/strain.
 
 ### MeShClust, Gclust and VSEARCH selection
 MeShClust, Gclust and VSEARCH all require input to be in the form of a single multi-fasta file containing all genomes to select from. For this we used the `scripts/concatenate_genomes.py` Python script as follows:
 ```bash
-python -u scripts/concatenate_genomes.py --genomes root/genomes/${species} --output root/genomes/${species}
+python -u scripts/concatenate_genomes.py --genomes root/genomes/${species,strain} --output root/genomes/${species,strain}
 ```
-This concatenates genomes consisting of multiple compartments (e.g. chromosomes) and creates a single multi-fasta file called `all_genomes.fasta` for every genome in a species. \
-**NOTE**: this script assumes that all genomes of a species are stored in the same input directy, and that they end with the `.fa` extension.
+This concatenates genomes consisting of multiple compartments (e.g. chromosomes) and creates a single multi-fasta file called `all_genomes.fasta` for every genome in a species/strain. \
+**NOTE**: this script assumes that all genomes of a species/strain are stored in the same input directy, and that they end with the `.fa` extension.
 
 #### MeShClust selection
-We ran MeShClust with thresholds of 95%, 97% and 99% as follows:
+We ran MeShClust with thresholds of 95%, 97% and 99% for species-level experiments, and 95% and 99% for strain-level experiments (99.9% was excluded as MeShClust does not allow thresholds above 99%) as follows:
 ```bash
-meshclust -d root/genomes/${species}/all_genomes.fasta -o root/selections/meshclust/0.95/${species}/meshclust_0.95 -t 0.95 -c 64
-meshclust -d root/genomes/${species}/all_genomes.fasta -o root/selections/meshclust/0.97/${species}/meshclust_0.97 -t 0.97 -c 64
-meshclust -d root/genomes/${species}/all_genomes.fasta -o root/selections/meshclust/0.99/${species}/meshclust_0.99 -t 0.99 -c 64
+meshclust -d root/genomes/${species,strain}/all_genomes.fasta -o root/selections/meshclust/${threshold}/${species,strain}/meshclust_${threshold} -c ${threads} -t ${threshold} # for a similarity threshold of 99%, use 0.99
 ```
-This creates a file called `meshclust_${threshold}` in the `root/selections/meshclust/${threshold}/${species}` folder containing the clusters as well as assigned cluster representatives.
+This creates a file called `meshclust_${threshold}` in the `root/selections/meshclust/${threshold}/${species,strain}` folder containing the clusters as well as assigned cluster representatives.
 
 #### Gclust selection
 To run Gclust, all genomes in the `all_genomes.fasta` file have to be sorted according to length (longest to shortest). For this, we used the perl script provided with Gclust:
 ```bash
-perl sortgenome.pl --genomes-file root/genomes/${species}/all_genomes.fasta --sortedgenomes-file root/genomes/${species}/all_genomes_sorted.fasta
+perl sortgenome.pl --genomes-file root/genomes/${species,strain}/all_genomes.fasta --sortedgenomes-file root/genomes/${species,strain}/all_genomes_sorted.fasta
 ```
-Afterwards, we ran Gclust with similarity thresholds of 95%, 97% and 99% with parameters as described in the [paper](https://academic.oup.com/gpb/article/17/5/496/7229746):
+Afterwards, we ran Gclust with similarity thresholds of 95%, 97% and 99% for the species-level experiments, and 95%, 99% and 99.9% for the strain-level experiments, using the parameters described in the [Gclust paper](https://academic.oup.com/gpb/article/17/5/496/7229746):
 ```bash
-gclust -threads 64 -minlen 41 -both -chunk 400 -ext 1 -sparse 4 -nuc -loadall -rebuild -memiden 95 root/genomes/${species}/all_genomes_sorted.fasta > root/selections/gclust/0.95/${species}/gclust_0.95
-gclust -threads 64 -minlen 41 -both -chunk 400 -ext 1 -sparse 4 -nuc -loadall -rebuild -memiden 97 root/genomes/${species}/all_genomes_sorted.fasta > root/selections/gclust/0.97/${species}/gclust_0.97
-gclust -threads 64 -minlen 41 -both -chunk 400 -ext 1 -sparse 4 -nuc -loadall -rebuild -memiden 99 root/genomes/${species}/all_genomes_sorted.fasta > root/selections/gclust/0.99/${species}/gclust_0.99
+gclust -threads ${threads} -minlen 41 -both -threads ${threads} -chunk 400 -ext 1 -sparse 4 -nuc -loadall -rebuild -memiden ${threshold} root/genomes/${species,strain}/all_genomes_sorted.fasta > root/selections/gclust/0.${threshold}/${species,strain}/gclust_0.${threshold}.clusters # for a similarity threshold of 99%, use 99
 ```
+This creates a file called `gclust_0.${threshold}.clusters` in `root/selections/gclust/0.${threshold}/${species,strain}`, similar to the output created by MeShClust.
 
 ## Post-processing
-After running the tools, the selected reference genomes are all located in the `root/selection` folder for all species. From here, we proceed with three steps. First, we generate index files that store all genomes (as their filenames) and their corresponding species. This can be done by running the `generate_all_selection.py` Python script in the `scripts` folder:
+After running the tools, the selected reference genomes are all located in the `root/selection` folder for all species/strain taxids. The next step is to create selection manifests for every experiment, which document which genomes have been selected by every method-threshold combination. This can be done by running the `prepare_files.py` Python script in the `root/scripts/bacteria` folder as follows:
 ```bash
-python scripts/generate_all_selection.py --genomes root/genomes --output root/reference_sets --a2t
+python scripts/bacteria/prepare_files.py --genomes_folder root/genomes --selections_folder root/selections --taxdmp_folder root/taxdmp --taxdmp_output_folder root/taxdmp_restricted
 ```
-This creates two files. The first file is a tab-delimited file called `all.tsv` in the `root/reference_sets` folder containing all of the filenames, their corresponding species and an identifier that can be used to find species for which a tool was unable to select (not relevant for "all" selection) structured as follows:
+This creates multiple files. First is a tab-separated file per method-threshold combination, with each line represeting a selected genome and structured as:
 ```
-SPECIES GENOME_FILENAME +/-
+TAXID GENOME_FILENAME +/-
 ```
-The second file is a `nucl_gb.accession2taxid` file stored in `root/reference_sets` which mimics the accession2taxid file in NCBI's taxonomy, but only retains accessions relevant to our usecase.
+with the first entry the taxid, second entry a the filename containing the genome filename, and the third entry identifying if a selection was succesful, or if it was randomly selected afterwards.
 
-In the second step we determine the species that will be used in our experiments since using all bacterial species was computationally infeasible. For this we select an order, family and genus by considering species that have at least 100 genomes. Afterwards, remaining species were sorted according to their average intra-species distance, from highest to lowest and a taxon (order, family, genus) was chosen if it was the first to have 5 species. The Python script to do this can be found in `scripts/bacteria/select_taxa.py` and uses the `TaxTree.py` helper script as well as the NCBI taxonomy files in `root/taxdmp`. The output of this script further consists of all species that were part of the chosen taxa (per taxon) which is stored in `root/selected_${taxon}_genomes.tsv`.
+In addition to the selection files, this script also creates surrogate taxdmp files analogue to NCBI's taxdmp files, but only containing the species and strains considered here. Additionally, it has a nodes.dmp file with a custom taxonomy for the *E. coli* strains, such that every strain is a direct descendant of the corresponding species taxonomic node, which is necessary for the profiling tools.
 
-In the final step we create files similar to the `all.tsv` for every selection, across all experiments (as well as for all available species). We do this by calling the `generate_selection_files.py` Python script in `scripts/bacteria`:
-```bash
-python -u root/scripts/bacteria/generate_selection_files.py --genomes root/genomes --selection root/selections/${method}/${threshold} --filename ${method}_${threshold} --output root/reference_sets
-```
-Similar to before, this will create tab-delimited files called `${method}_${threshold}.tsv` in `root/reference_sets` as well as the subfolders thereof for the experiments in order to only include the selections for considered species. \
-**NOTE**: This should be run for every selection method (including `all`) and threshold in order to proceed to building the profiling indexes!
+## Selection of taxa for experiments
+To select the taxa we considered here, we ran the `scripts/bacteria/select_taxa.py` script which selects an order, family and genus by consdiering species with at least 100 genomes, and focusing on intra-species diversity (see manuscript). The selected taxa and accessions from which we simulated reads for every experiment can be found in the files folder of this repository. The exception to this is the strain experiments, for which we used strains from an existing mock community sample (see manuscript).
 
 ## Index building
 With all the reference sets, we can now build the profiling indices. In our work we used:
@@ -188,21 +187,24 @@ With all the reference sets, we can now build the profiling indices. In our work
 ### Kraken2 + Bracken
 For Kraken2+Bracken we have provided a simple bash script called `compile_kraken2-bracken.sh` that gathers all target genomes, and builds a combined index. The script can be called for every experiment as follows:
 ```bash
-bash scripts/bacteria/compile_kraken2-bracken.sh ${method}_${threshold} root/reference_sets/${experiment} root/indexes/${experiment}/bracken root/genomes root/taxonomy root/reference_sets/nucl_gb.accession2taxid
+bash scripts/bacteria/compile_kraken2-bracken.sh ${method}_${threshold} root/reference_sets/${experiment} root/indexes/${experiment}/bracken root/genomes root/taxdmp root/taxdmp_restricted/full.accession2taxid
 ```
 This creates a combined Kraken2 and Bracken index for a given method-threshold combination and experiment, which is located in `/root/indexes/${experiment}/bracken/${method}_${threshold}`.
+**NOTE**: for the strain-level experiments, we pass `root/taxdmp_restricted` instead of `root/taxdmp` to copy the custom taxonomy.
 
 ### Centrifuge
 For Centrifuge we have a similar bash script called `compile_centrifuge.sh` which we call like:
 ```bash
-bash scripts/bacteria/compile_centrifuge.sh ${method}_${threshold} root/reference_sets/${experiment} root/indexes/${experiment}/centrifuge root/genomes root/taxonomy root/reference_sets/nucl_gb.accession2taxid
+bash scripts/bacteria/compile_centrifuge.sh ${method}_${threshold} root/reference_sets/${experiment} root/indexes/${experiment}/centrifuge root/genomes root/taxdmp root/taxdmp_restricted/partial.accession2taxid
 ```
+**NOTE**: for the strain-level experiments, we pass `root/taxdmp_restricted` instead of `root/taxdmp` to copy the custom taxonomy.
 
 ### BWA + DUDes
 Finally, for BWA with DUDes we use the script called `compile_bwa-dudes.sh` which can be called in a similar fashion:
 ```bash
-bash scripts/bacteria/compile_bwa-dudes.sh ${method}_${threshold} root/reference_sets/${experiment} root/indexes/${experiment}/dudes root/genomes root/taxonomy root/reference_sets/nucl_gb.accession2taxid
+bash scripts/bacteria/compile_bwa-dudes.sh ${method}_${threshold} root/reference_sets/${experiment} root/indexes/${experiment}/dudes root/genomes root/taxdmp root/taxdmp_restricted/full.accession2taxid
 ```
+**NOTE**: for the strain-level experiments, we pass `root/taxdmp_restricted` instead of `root/taxdmp` to copy the custom taxonomy.
 
 ## Profiling
 The first step for obtaining the profiling results is to simulate reads. For our bacterial experiments, we simulated paired-end reads using ART v2016.06.05 from the top 10 (sorted according to completeness) genome assemblies that were "Scaffold" or "Chromosome" status (see Zenodo). Additionally, we store the files called `${experiment}_species.txt` and `${taxid}_accessions.txt` (see `files` folder) that contain the species and accessions used for simulating reads. Using these files, we simulated independent samples with approximately equal abundance (in terms of the number of reads) for every species using the following Python script using ART v2016.06.05:
@@ -215,13 +217,14 @@ from pathlib import Path
 import math
 import multiprocessing
 from Bio import SeqIO
+import argparse
 
-def generate_commands():
+def generate_commands(readcount):
 	"""
 	This function will generate bash commands to perform the ART simulations using the parameters defined as constants below.
 	"""
 	NUM_SAMPLES 	= 10
-	NUM_READS 		= 5_000_000 #approximate number of reads per sample
+	NUM_READS 		= readcount #approximate number of reads per sample
 	FRAGMENT_SIZE 	= 270
 	FRAGMENT_STD	= 20
 	READ_LENGTH		= 150
@@ -263,7 +266,7 @@ def generate_commands():
 			for cur_species in species:
 				for cur_accession in accessions_per_species[cur_species]:
 					num_reads_per_accession = math.ceil(num_reads_per_species[cur_species] * 0.1) #10 genomes for every species -> 1/10 abundance for all of them
-                    output_path = f"{OUTPUT_PREFIX}/{experiment_type}/{sample}/{cur_species}" #this is output for reads per species
+                    output_path = f"{OUTPUT_PREFIX}/{experiment_type}/{readcount}/{sample}/{cur_species}" #this is output for reads per species
 					output_path_object = Path(output_path)
 					output_path_object.mkdir(parents=True, exist_ok=True)
 					# We exclude the alignment files simply due to the space occupation of these files
@@ -320,45 +323,51 @@ def run_subprocess(command_set):
 		subprocess.run(["rm", "-r", f"{prefix}/{species}"])
 
 if __name__ == "__main__":
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--readcount", type=int, required=True)
+	args = parser.parse_args()
+
+	num_reads = args.readcount
+
     # Currently, this uses 16 cores to process all the ART commands
     NUM_CORES = 16
-    commands = generate_commands()
+    commands = generate_commands(num_reads)
     with multiprocessing.Pool(NUM_CORES) as pool:
         pool.map(run_subprocess, commands)
 ```
-This script creates 10 mixed metagenomic samples per experiment with approximately 5,000,000 paired-end reads of 150bp (270bp fragments, 10bp stdev) and equal read-based abundance for all species, which are stored in `root/samples/${experiment}/sample_${sample}/sample_{1,2}.fq`. With the simulated samples, we can call the profilers to estimate the relative abundances of species using the constructed reference sets.
+We ran this script with both `--readcount 500000` and `--readcount 5000000` to create 10 mixed metagenomic samples per experiment with approximately 500,000 paired-end and 5,000,000 reads of 150bp (270bp fragments, 10bp stdev) and equal read-based abundance for all species, respectively. The resulting reads are stored in `root/samples/{500000,5000000}/${experiment}/sample_${sample}/sample_{1,2}.fq`. With the simulated samples, we can call the profilers to estimate the relative abundances of species using the constructed reference sets.
 
 ### Kraken2 + Bracken
 Running Kraken2 and Bracken is done in two subsequent steps: first running Kraken2 and then running Bracken to get species-level abundance estimates. This was done for every sample and method-threshold combination as follows:
 ```bash
-kraken2 --db root/indexes/${experiment}/bracken/${method}_${threshold} --threads 16 --report root/estimations/${experiment}/bracken/sample_${sample}/${method}_${threshold}.kreport --paired root/samples/${experiment}/sample_${sample}/sample_1.fq root/samples/${experiment}/sample_${sample}/sample_2.fq > root/estimations/${experiment}/bracken/sample_${sample}/${method}_${threshold}.kraken #generates Kraken2 output
-bracken -d root/indexes/${experiment}/bracken/${method}_${threshold} -i root/estimations/${experiment}/bracken/sample_${sample}/${method}_${threshold}.kreport -o root/estimations/${experiment}/bracken/sample_${sample}/${method}_${threshold}.bracken -r 150 -l S #generates Bracken output
+kraken2 --db root/indexes/${experiment}/bracken/${method}_${threshold} --threads ${threads} --report root/estimations/{500000,5000000}/${experiment}/bracken/sample_${sample}/${method}_${threshold}.kreport --paired root/samples/{500000,5000000}/${experiment}/sample_${sample}/sample_1.fq root/samples/{500000,5000000}/${experiment}/sample_${sample}/sample_2.fq > root/estimations/{500000,5000000}/${experiment}/bracken/sample_${sample}/${method}_${threshold}.kraken #generates Kraken2 output
+bracken -d root/indexes/${experiment}/bracken/${method}_${threshold} -i root/estimations/{500000,5000000}/${experiment}/bracken/sample_${sample}/${method}_${threshold}.kreport -o root/estimations/{500000,5000000}/${experiment}/bracken/sample_${sample}/${method}_${threshold}.bracken -r 150 -l S #generates Bracken output
 ```
-This produces several output files, of which the `${method}_${threshold}.bracken` file is the most relevant as it will contain the species-level abundances (although the `${method}_${threshold}.kreport` files can be used to infer the number of unclassified reads).
+This produces several output files, of which the `${method}_${threshold}.bracken` file is the most relevant as it will contain the species-level abundances (although the `${method}_${threshold}.kreport` files can be used to infer the number of unclassified reads). **NOTE**: for the strain-level experiments we instead run Bracken with `-l S1`.
 
 ### Centrifuge
 Centrifuge can be run per sample, reference set and experiment as follows:
 ```bash
-centrifuge -p 16 -x root/indexes/${experiment}/centrifuge/${method}_${threshold}/index/${method}_${threshold} -1 root/samples/${experiment}/sample_${sample}/sample_1.fq -2 root/samples/${experiment}/sample_${sample}/sample_2.fq -S root/estimations/${experiment}/centrifuge/sample_${sample}/${method}_${threshold}.sam --report-file root/estimations/${experiment}/centrifuge/sample_${sample}/${method}_${threshold}.report
+centrifuge -p ${threads} -x root/indexes/${experiment}/centrifuge/${method}_${threshold}/index/${method}_${threshold} -1 root/samples/{500000,5000000}/${experiment}/sample_${sample}/sample_1.fq -2 root/samples/{500000,5000000}/${experiment}/sample_${sample}/sample_2.fq -S root/estimations/{500000,5000000}/${experiment}/centrifuge/sample_${sample}/${method}_${threshold}.sam --report-file root/estimations/{500000,5000000}/${experiment}/centrifuge/sample_${sample}/${method}_${threshold}.report
 ```
 This produces an alignment-like file (`${method}_${threshold}.sam`) as well as a report file (`${method}_${threshold}.report`) which will contain the abundance estimates.
 
 ### BWA + DUDes
 DUDes also requires multiple steps. First we use BWA-mem to align reads to the reference index:
 ```bash
-bwa mem -t 16 -v 1 root/indexes/${experiment}/dudes/${method}_${threshold}/bwa_index/bwa root/samples/${experiment}/sample_${sample}/sample_1.fq root/samples/${experiment}/sample_${sample}/sample_2.fq > root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}.sam
+bwa mem -t ${threads} -v 1 root/indexes/${experiment}/dudes/${method}_${threshold}/bwa_index/bwa root/samples/{500000,5000000}/${experiment}/sample_${sample}/sample_1.fq root/samples/{500000,5000000}/${experiment}/sample_${sample}/sample_2.fq > root/estimations/{500000,5000000}/${experiment}/dudes/sample_${sample}/${method}_${threshold}.sam
 ```
 After running BWA-mem we filter out unaligned reads and finally run DUDes on the filtered alignment file:
 ```bash
 # Filter unaligned and calculate stats
-samtools view -F 4 -h root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}.sam > root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}_filtered.sam
+samtools view -F 4 -h root/estimations/{500000,5000000}/${experiment}/dudes/sample_${sample}/${method}_${threshold}.sam > root/estimations/{500000,5000000}/${experiment}/dudes/sample_${sample}/${method}_${threshold}_filtered.sam
 # Run DUDes
-dudes -s root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}_filtered.sam -d root/indexes/${experiment}/dudes/${method}_${threshold}/dudes_index/dudes.npz -o root/estimations/${experiment}/dudes/sample_${sample}/${method}_${threshold}_dudes -l species
+dudes -s root/estimations/{500000,5000000}/${experiment}/dudes/sample_${sample}/${method}_${threshold}_filtered.sam -d root/indexes/${experiment}/dudes/${method}_${threshold}/dudes_index/dudes.npz -o root/estimations/{500000,5000000}/${experiment}/dudes/sample_${sample}/${method}_${threshold}_dudes -l species
 ```
-This results in a `${method}_${threshold}_dudes` file that contains the final abundance estimates.
+This results in a `${method}_${threshold}_dudes` file that contains the final abundance estimates. **NOTE**: for the strain-level experiments, we instead run DUDes with `-l strain`.
 
 ## Analysis
-To analyse the results obtained we will assume that the workflow was ran as described above. Additionally, for resource usage monitoring, we assume that commands were run with `/usr/bin/time` and that the output is stored somewhere.
+To analyse the results obtained we will assume that the workflow was ran as described above. Additionally, for resource usage monitoring, we assume that commands were run with `/usr/bin/time` and that the output is stored somewhere. **NOTE**: the Jupyter notebooks provided are for species-level experiments. The strain-level analysis was done in the same way, except using different thresholds, and profiling at the strain-level.
 
 ### Reference set comparisons
 In `scripts/bacteria/analysis_reference_sets.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the reference set comparisons. 
@@ -367,4 +376,266 @@ In `scripts/bacteria/analysis_reference_sets.ipynb` we provide a Jupyter noteboo
 In `scripts/bacteria/analysis_accuracy.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the accuracy calculations.
 
 ### Runtime comparisons
-In `scripts/bacteria/analsys_runtime.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the runtime calculations.
+In `scripts/bacteria/analsys_runtime.ipynb` we provide a Jupyter notebook that details the steps we took to obtain the results and figures (using matplotlib and seaborn) regarding the runtime calculations. **NOTE**: for the runtime analysis, we only consider the 5M readpair samples.
+
+# Mock community samples for strain-level experiments
+Here we will briefly describe the workflow for the mock community analysis in the strain-level experiments (both processing + read simulations).
+
+**Dependencies**:
+- bowtie2 v2.5.4
+- fastp v1.1.0
+- fastqc v0.12.1
+- picard v2.20.4
+- samtools v1.23
+- sra-tools v3.2.1
+
+## Pre-processing
+We downloaded the SRR13355226 mock community sample, which consists of 99% human host DNA, and 1% *E. coli* DNA, as well as a human reference genome (GRCh38) by running the following steps:
+```bash
+ACC=SRR13355226
+
+mkdir -p root/mock_community/fastq ## this is where reads and intermediate files will be stored
+cd root/mock_community
+
+prefetch $ACC ##requires sra_tools
+
+## Convert to FastQ
+fasterq-dump $ACC/$ACC.sra --split-files --threads ${threads} --outdir fastq
+
+## Download human host from USCS
+mkdir -p root/mock_community/human_ref
+cd root/mock_community/human_ref
+wget -c https://hgdownload.cse.ucsc.edu/goldenpath/hg38/bigZips/latest/hg38.fa.gz
+gunzip -c hg38.fa.gz > hg38.fa
+```
+
+Next, we run FastQC to assess the quality of reads:
+```bash
+mkdir -p root/mock_community/fastq/qc/raw
+
+fastqc -t ${threads} -o root/mock_community/fastq/qc/raw root/mock_community/fastq/*.fastq
+```
+
+The result of running FastQC was the following:
+```
+==== SRR13355226_1_fastqc/summary.txt ====
+PASS    Basic Statistics        SRR13355226_1.fastq
+PASS    Per base sequence quality       SRR13355226_1.fastq
+WARN    Per tile sequence quality       SRR13355226_1.fastq
+PASS    Per sequence quality scores     SRR13355226_1.fastq
+FAIL    Per base sequence content       SRR13355226_1.fastq
+FAIL    Per sequence GC content SRR13355226_1.fastq
+PASS    Per base N content      SRR13355226_1.fastq
+PASS    Sequence Length Distribution    SRR13355226_1.fastq
+PASS    Sequence Duplication Levels     SRR13355226_1.fastq
+PASS    Overrepresented sequences       SRR13355226_1.fastq
+FAIL    Adapter Content SRR13355226_1.fastq
+==== SRR13355226_2_fastqc/summary.txt ====
+PASS    Basic Statistics        SRR13355226_2.fastq
+FAIL    Per base sequence quality       SRR13355226_2.fastq
+WARN    Per tile sequence quality       SRR13355226_2.fastq
+PASS    Per sequence quality scores     SRR13355226_2.fastq
+FAIL    Per base sequence content       SRR13355226_2.fastq
+FAIL    Per sequence GC content SRR13355226_2.fastq
+PASS    Per base N content      SRR13355226_2.fastq
+PASS    Sequence Length Distribution    SRR13355226_2.fastq
+PASS    Sequence Duplication Levels     SRR13355226_2.fastq
+PASS    Overrepresented sequences       SRR13355226_2.fastq
+FAIL    Adapter Content SRR13355226_2.fastq
+```
+
+This shows that adapters need to be filtered, and that tails need to be trimmed. Additionally, we perform minimal read length filtering by running FastP:
+```bash
+mkdir -p root/mock_community/fastq/qc/fastp
+
+BASEDIR=root/mock_community/fastq
+fastp \
+	-i ${BASEDIR}/SRR13355226_1.fastq \
+    -I ${BASEDIR}/SRR13355226_2.fastq \
+    -o ${BASEDIR}/qc/fastp/SRR13355226_1.fastq \
+    -O ${BASEDIR}/qc/fastp/SRR13355226_2.fastq \
+    -h ${BASEDIR}/qc/fastp/fastp_report.html \
+    -j ${BASEDIR}/qc/fastp/fastp_report.json \
+    -w ${SLURM_CPUS_PER_TASK} \
+    --detect_adapter_for_pe \
+    --cut_tail \
+    --cut_tail_mean_quality 20 \
+    --length_required 50 
+```
+
+The next step is to map reads to the human genome in order to 1: de-host the sample and 2: estimate read fragment statistics for simulations:
+```bash
+BASEDIR=root/mock_community
+ACC=SRR13355226
+
+## Build index
+bowtie2-build ${BASEDIR}$/human_ref/hg38.fa ${BASEDIR}/human_ref/bowtie2/hg38
+
+mkdir -p ${BASEDIR}/dehosting/dehosted
+mkdir -p ${BASEDIR}/dehosting/host
+
+bowtie2 \
+	--very-sensitive \
+	-x ${BASEDIR}/human_ref/bowtie2/hg38 \
+	-1 ${BASEDIR}/fastq/qc/${ACC}_1.fastq \
+	-2 ${BASEDIR}/fastq/qc/${ACC}_2.fastq \
+	-p ${threads} \
+	--un-conc ${BASEDIR}/dehosting/dehosted/dehosted.fastq \
+	-S - \
+	| samtools view -@ ${threads} -b - \
+	| samtools sort -@ ${threads} -o ${BASEDIR}/dehosting/host/host.sorted.bam -
+
+samtools index -@ ${threads} ${BASEDIR}/dehosting/host/host.sorted.bam
+
+samtools fastq ${BASEDIR}/dehosting/host/host.sorted.bam \
+	-f 12 -F 256 \
+	-1 ${BASEDIR}/dehosting/dehosted/dehosted_unmapped_1.fastq \
+	-2 ${BASEDIR}/dehosting/dehosted/dehosted_unmapped_2.fastq \
+	-0 /dev/null -s /dev/null -n
+```
+ 
+The final step in pre-processing, is to estimate the stats of the aligned reads using Picard:
+```bash
+BASEDIR=root/mock_community
+
+# First retrieve proper pairs with mapping quality >= 20
+samtools view -b -f 2 -q 20 -F 2304 \
+	${BASEDIR}/dehosting/host/host.sorted.bam \
+	| samtools sort -@ ${threads} -o ${BASEDIR}/dehosting/host/host.proper.q20.bam -
+
+# Index
+samtools index -@ ${threads} ${BASEDIR}/dehosting/host/host.proper.q20.bam
+
+# Picard
+picard CollectInsertSizeMetrics \
+	I=${BASEDIR}/dehosting/host/host.proper.q20.bam \
+    O=${BASEDIR}/dehosting/host/insert_metrics.txt \
+    H=${BASEDIR}/dehosting/host/insert_hist.pdf \
+    M=0.5
+```
+
+From this we find that the average fragment size is 265.34 with a standard deviation of 104.33, which we will use as input for the mock sample simulations that we will describe below.
+
+Below is the Python script that we used to generate the mock community samples:
+```python
+import subprocess
+import os
+import random
+import shutil
+from pathlib import Path
+import math
+import argparse
+import multiprocessing
+from Bio import SeqIO
+
+def main():
+	"""
+	This script will generate simulated reads for the strain-level experiments.
+	We generate 3 sets of samples:
+		3. 10 samples with properties similar to the mock community sample
+	"""
+	parser = argparse.ArgumentParser()
+	# Overall parameters
+	parser.add_argument("--genomes_folder", type=str, required=True)
+	# Mock sample parameters
+	parser.add_argument("--num_mock_samples", type=int, default=10)
+	parser.add_argument("--num_mock_reads", type=int, default=5_000_000)
+	parser.add_argument("--mock_fragment_size", type=int, default=270)
+	parser.add_argument("--mock_fragment_std", type=int, default=20)
+	parser.add_argument("--mock_read_length", type=int, default=151)
+	parser.add_argument("--mock_technology", type=str, default="HS25")
+	parser.add_argument("--mock_output_prefix", type=str, required=True)
+	# Coverage sample parameters
+	parser.add_argument("--cov_output_prefix", type=str, required=True)
+	# Temporaryy directory for ART output (will be removed at the end of the script)
+	parser.add_argument("--tmp_folder", type=str, required=True)
+	args = parser.parse_args()
+
+	# Constants (strains, abundances for mock sample, etc.)
+	STRAINS = [316401, 364106, 386585, 331111] #H10407, UTI89, Sakai, E24377A
+	ABUNDANCES = {
+		316401: "0.800",	#H10407
+		364106: "0.150", 	#UTI89
+		386585: "0.049", 	#Sakai
+		331111: "0.001", 	#E24377A
+	}
+
+	# Find genome lenghts (which is used to determine fold coverage)
+	length_per_strain = {} #only one genome per strain, so we can just sum the lengths of all contigs for that genome
+	for strain in STRAINS:
+		length_per_strain[strain] = 0
+		with open(f"{args.genomes_folder}/{strain}.fna", "r") as f_in:
+			for record in SeqIO.parse(f_in, "fasta"):
+				length_per_strain[strain] += len(record.seq)
+
+	############### Generate mock community samples ###############
+	print("Generating mock community samples...")
+	seed = args.num_mock_reads #use a different seed from the baseline experiments
+	# Here we do not use math.ceil since we want to closely mimic the properties of the mock community sample
+	num_reads_per_strain = {
+		strain: args.num_mock_reads * float(ABUNDANCES[strain]) for strain in STRAINS
+	}
+	for sample in range(1, args.num_mock_samples+1):
+		output_path = f"{args.tmp_folder}/samples_mock/{sample}"
+		output_path_object = Path(output_path)
+		output_path_object.mkdir(parents=True, exist_ok=True)
+		# Generate commands for current sample
+		fwd_paths = []
+		rev_paths = []
+		for s_idx, strain in enumerate(STRAINS):
+			"""
+			Below we define the fold coverage as 2 x (read length) x (number of reads) / (genome length) since this is more consistent with
+			the definition internally used by ART. For all other experiments, where the fold coverage is less relevant (here we
+			want to closely mimic the properties of the mock community sample), we will stick to the fragment size x number of reads / genome length definition, 
+			which we use for all other experimental settings as well.
+			"""
+			command = [
+				"art_illumina",
+				"-p", #paired-end
+				"-i", f"{args.genomes_folder}/{strain}.fna",
+				"-l", str(args.mock_read_length),
+				"-f", f"{num_reads_per_strain[strain] * args.mock_read_length * 2 / length_per_strain[strain]:.5f}", #calculate fold coverage based on number of reads, read length and genome length
+				"-ss", args.mock_technology,
+				"-m", str(args.mock_fragment_size),
+				"-s", str(args.mock_fragment_std),
+				"-o", f"{output_path}/{strain}_",
+				"-rs", str(seed),
+				"-na"
+			]
+			fwd_paths.append(f"{output_path}/{strain}_1.fq")
+			rev_paths.append(f"{output_path}/{strain}_2.fq")
+			subprocess.run(command, check=True) #runs command and raises an error if it fails
+			seed += 1
+		
+		# Combine forward reads
+		output_path = f"{args.mock_output_prefix}/samples_mock/{sample}"
+		os.makedirs(output_path, exist_ok=True)
+		with open(f"{output_path}/sample_1.fq", "w") as f_out:
+			subprocess.run(["cat", *fwd_paths], stdout=f_out, check=True)
+		# Combine reverse reads
+		with open(f"{output_path}/sample_2.fq", "w") as f_out:
+			subprocess.run(["cat", *rev_paths], stdout=f_out, check=True)
+		# Remove temporary folder with individual .fq files
+		shutil.rmtree(f"{args.tmp_folder}/samples_mock/{sample}")
+
+		print(f"Finished generating mock community sample {sample}/{args.num_mock_samples}")
+
+if __name__ == "__main__":
+	main()
+```
+
+The script was called as:
+```bash
+python -u generate_mock_samples.py \
+    --genomes_folder ${PREFIX}/genomes \
+    --num_mock_samples 10 \
+    --num_mock_reads 726777 \
+    --mock_fragment_size 265 \
+    --mock_fragment_std 104 \
+    --mock_read_length 150 \
+    --mock_technology "HS25" \
+    --mock_output_prefix ${PREFIX} \
+```
+where we assume that ${PREFIX} points to a folder that contains a subfolder called `genomes` with 1 genome for every strain in the mock community (see manuscript).
+
+The analysis carried out for the mock community sample (both real and simulated) was identical to the other simulated samples, using the analysis scripts adapted for strain-level experiments.

@@ -638,4 +638,54 @@ python -u generate_mock_samples.py \
 ```
 where we assume that ${PREFIX} points to a folder that contains a subfolder called `genomes` with 1 genome for every strain in the mock community (see manuscript).
 
-The analysis carried out for the mock community sample (both real and simulated) was identical to the other simulated samples, using the analysis scripts adapted for strain-level experiments.
+The analysis carried out for the mock community sample (both real and simulated) was identical to the other simulated samples, using the analysis scripts adapted for strain-level experiments. For comparing between the simulated and real mock community samples we ran the following snippet to assess whether the outcome for the real samples is significantly different compared to the simulated samples:
+
+```python
+import numpy as np
+from statsmodels.stats.multitest import multipletests
+
+# Compare difference between simulated mock community and real mock community
+for profiler in ["bracken", "centrifuge"]: #exclude DUDes due to no results at strain-level
+	empirical_pvals_l1 = []
+	empirical_pvals_f1 = []
+
+	print(f"Comparing simulated vs real for {profiler}...")
+	cur_results_sim = results[profiler] #set-up for results is identical to how it is defined in the bacterial analysis script
+	cur_results_real = results_real[profiler]
+	for method in METHODS:
+		sim_l1 = np.asarray(cur_results_sim[method]["L1"])
+		sim_f1 = np.asarray(cur_results_sim[method]["F1"])
+
+		real_l1 = cur_results_real[method]["L1"]
+		real_f1 = cur_results_real[method]["F1"]
+
+		center_l1 = np.median(sim_l1)
+		center_f1 = np.median(sim_f1)
+
+		d_l1 = np.abs(sim_l1 - center_l1)
+		d_f1 = np.abs(sim_f1 - center_f1)
+
+		empirical_pval_l1 = (1 + np.sum(d_l1 >= np.abs(real_l1 - center_l1))) / (1 + len(d_l1))
+		empirical_pval_f1 = (1 + np.sum(d_f1 >= np.abs(real_f1 - center_f1))) / (1 + len(d_f1))
+
+		empirical_pvals_l1.append(empirical_pval_l1)
+		empirical_pvals_f1.append(empirical_pval_f1)
+
+	# Correct for multiple testing (Benjamini-Hochberg)
+	empirical_pvals_l1_corrected = dict(
+		zip(
+			[METHODS_LABELS[m] for m in METHODS],
+			multipletests(empirical_pvals_l1, method="fdr_bh")[1]
+		)
+	)
+	empirical_pvals_f1_corrected = dict(
+		zip(
+			[METHODS_LABELS[m] for m in METHODS],
+			multipletests(empirical_pvals_f1, method="fdr_bh")[1]
+		)
+	)
+	for method in METHODS:
+		method_label = METHODS_LABELS[method]
+		print(f"Method: {method_label:<10}, Adjusted p-value (L1): {empirical_pvals_l1_corrected[method_label]:.4f} ({'significant' if empirical_pvals_l1_corrected[method_label] < ALPHA else 'not significant'})")
+		print(f"        {'':<10}    Adjusted p-value (F1): {empirical_pvals_f1_corrected[method_label]:.4f} ({'significant' if empirical_pvals_f1_corrected[method_label] < ALPHA else 'not significant'})")
+```

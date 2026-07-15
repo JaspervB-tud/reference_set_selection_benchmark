@@ -5,7 +5,7 @@
 
 **Conclusions**: Reference genome selection influences both accuracy and computational efficiency in taxonomic profiling, but its benefits seem context- and resolution-dependent. Our results demonstrate that reference set design does not have a one-size-fits-all solution, and that selection strategies should be adapted based on the biological and computational setting. 
 
-The manuscript itself can be found on [bioRxiv](https://doi.org/10.1101/2025.02.07.637076).
+The manuscript itself has been published in BMC Genomics and can be found [here](https://doi.org/10.1186/s12864-026-12874-w).
 
 ## Data
 The accession ids of all genomes used for our manuscript, as well as the raw simulated reads are available on [Zenodo](https://doi.org/10.5281/zenodo.18867106). The bacterial assemblies can be downloaded from NCBI (e.g. through NCBI's entrez), and the SARS-CoV-2 genomes as well as corresponding metadata can be downloaded from GISAID using the provided accession ids.
